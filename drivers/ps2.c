@@ -1,6 +1,7 @@
 #include "ps2.h"
 #include "../kernel/kernel.h"
 #include "../gui/fb.h"
+#include "../kernel/interrupts/idt.h"
 
 int32_t mouse_x = 512;
 int32_t mouse_y = 384;
@@ -128,15 +129,7 @@ static void handle_kbd(uint8_t data) {
 }
 
 void ps2_poll(void) {
-    uint8_t status = inb(0x64);
-    if (status & 1) { // Data available
-        uint8_t data = inb(0x60);
-        if (status & 0x20) {
-            handle_mouse(data);
-        } else {
-            handle_kbd(data);
-        }
-    }
+    // No-op! Fully handled by hardware interrupts (irq1_handler and irq12_handler) now.
 }
 
 char ps2_get_last_key(void) {
@@ -148,3 +141,32 @@ char ps2_get_last_key(void) {
 int ps2_is_alt_pressed(void) {
     return alt_pressed;
 }
+
+// C Interrupt Handler for Keyboard (IRQ 1)
+void irq1_handler(void* stack_frame) {
+    (void)stack_frame;
+    uint8_t status = inb(0x64);
+    if (status & 1) {
+        uint8_t data = inb(0x60);
+        if (!(status & 0x20)) {
+            handle_kbd(data);
+        }
+    }
+    // Send EOI to PIC (IRQ 1)
+    pic_send_eoi(1);
+}
+
+// C Interrupt Handler for Mouse (IRQ 12)
+void irq12_handler(void* stack_frame) {
+    (void)stack_frame;
+    uint8_t status = inb(0x64);
+    if (status & 1) {
+        uint8_t data = inb(0x60);
+        if (status & 0x20) {
+            handle_mouse(data);
+        }
+    }
+    // Send EOI to PIC (IRQ 12 on slave PIC)
+    pic_send_eoi(12);
+}
+

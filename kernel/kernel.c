@@ -4,6 +4,11 @@
 #include "../gui/fb.h"
 #include "../shell/shell.h"
 
+// Subsystem Headers
+#include "interrupts/idt.h"
+#include "time/pit.h"
+#include "scheduler/scheduler.h"
+
 // Limine Requests
 __attribute__((used, section(".requests")))
 static volatile struct limine_framebuffer_request framebuffer_request = {
@@ -82,8 +87,18 @@ void kernel_main(void) {
     fb_render_wallpaper();
     log_ok("GUI Buffers initialized");
 
+    // Initialize Interrupts, PIT, and Scheduler
+    idt_init();
+    log_ok("Interrupt Descriptor Table (IDT) active");
+
+    pit_init(1000); // 1000Hz (1ms ticks)
+    log_ok("PIT hardware timer active");
+
+    scheduler_init();
+    log_ok("Task Scheduler active");
+
     ps2_init();
-    log_ok("PS/2 Input initialized");
+    log_ok("PS/2 Input active (Interrupt-driven)");
     
     log_ok("Welcome to Onken OS!");
 

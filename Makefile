@@ -6,7 +6,28 @@ CFLAGS = -m64 -ffreestanding -O2 -Wall -Wextra -fno-stack-protector -fno-stack-c
 ASFLAGS = -f elf64
 LDFLAGS = -m elf_x86_64 -nostdlib -static -z text -z max-page-size=0x1000 -T linker.ld
 
-OBJ = boot/boot.o kernel/kernel.o kernel/string.o kernel/mm.o kernel/fs.o drivers/ps2.o gui/fb.o gui/window.o shell/shell.o
+OBJ = boot/boot.o \
+      kernel/kernel.o \
+      kernel/string.o \
+      kernel/mm.o \
+      kernel/fs.o \
+      drivers/ps2.o \
+      gui/fb.o \
+      gui/window.o \
+      shell/shell.o \
+      kernel/interrupts/idt.o \
+      kernel/interrupts/interrupts.o \
+      kernel/time/pit.o \
+      kernel/scheduler/scheduler.o \
+      kernel/tasking/app.o \
+      kernel/syscalls/syscall.o \
+      apps/htop/htop.o \
+      apps/yano/yano.o \
+      apps/sysinfo/sysinfo.o \
+      apps/browser/browser.o \
+      apps/files/files.o \
+      apps/settings/settings.o \
+      apps/terminal/terminal.o
 TARGET = oneko.bin
 ISO = oneko.iso
 
