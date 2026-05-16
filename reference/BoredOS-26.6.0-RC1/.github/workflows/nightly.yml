@@ -1,0 +1,62 @@
+name: Nightly Build
+on:
+  push:
+    branches:
+      - 'main'
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            make \
+            gcc-x86-64-linux-gnu \
+            binutils-x86-64-linux-gnu \
+            nasm \
+            xorriso
+          sudo ln -sf /usr/bin/x86_64-linux-gnu-gcc /usr/local/bin/x86_64-elf-gcc
+          sudo ln -sf /usr/bin/x86_64-linux-gnu-ld  /usr/local/bin/x86_64-elf-ld
+          sudo ln -sf /usr/bin/x86_64-linux-gnu-ar  /usr/local/bin/x86_64-elf-ar
+
+      - name: Build ISO
+        run: make -j4
+
+      - name: Update nightly tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -fa nightly -m "Nightly build ${GITHUB_SHA}" "${GITHUB_SHA}"
+          git push origin refs/tags/nightly --force
+
+      - name: Prepare release metadata
+        id: metadata
+        run: |
+          echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish nightly release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nightly
+          name: Nightly Build (${{ steps.metadata.outputs.short_sha }})
+          body: |
+            This is an automated nightly build of BoredOS, this is not a final release and may be unstable.
+            Built from commit:
+            - Full hash: `${{ github.sha }}`
+            - Short hash: `${{ steps.metadata.outputs.short_sha }}`
+          prerelease: true
+          make_latest: false
+          files: |
+            boredos.iso
+          overwrite_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

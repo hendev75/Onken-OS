@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 415 130" width="100%">
+  <style>
+    text {
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 16px;
+      white-space: pre;
+      font-weight: bold;
+    }
+    .magenta { fill: #B589D6; }
+    .blue { fill: #569CD6; }
+    .cyan { fill: #4EC9B0; }
+    .text-color { fill: #FFFFFF; }
+  </style>
+  
+  <text x="0" y="20" xml:space="preserve"><tspan class="magenta">====================== </tspan><tspan class="text-color">__    ____  ____ </tspan></text>
+  <text x="0" y="40" xml:space="preserve"><tspan class="magenta">===================== </tspan><tspan class="text-color">/ /_  / __ \/ ___\</tspan></text>
+  <text x="0" y="60" xml:space="preserve"><tspan class="blue">==================== </tspan><tspan class="text-color">/ __ \/ / / /\___ \</tspan></text>
+  <text x="0" y="80" xml:space="preserve"><tspan class="blue">=================== </tspan><tspan class="text-color">/ /_/ / /_/ /____/ /</tspan></text>
+  <text x="0" y="100" xml:space="preserve"><tspan class="cyan">================== </tspan><tspan class="text-color">/_.___/\____//_____/ </tspan></text>
+  <text x="0" y="120" xml:space="preserve"><tspan class="cyan">================= </tspan></text>
+</svg>
