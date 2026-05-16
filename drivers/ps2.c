@@ -12,6 +12,8 @@ static uint8_t mouse_cycle = 0;
 static uint8_t mouse_byte[3];
 static char last_key = 0;
 static int alt_pressed = 0;
+static int ctrl_pressed = 0;
+
 
 static const char kbd_us[128] = {
     0,  27, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
@@ -123,6 +125,10 @@ static void handle_kbd(uint8_t data) {
         alt_pressed = 1;
     } else if (data == 0xB8) {
         alt_pressed = 0;
+    } else if (data == 0x1D) {
+        ctrl_pressed = 1;
+    } else if (data == 0x9D) {
+        ctrl_pressed = 0;
     } else if (data < 128) {
         last_key = kbd_us[data];
     }
@@ -140,6 +146,10 @@ char ps2_get_last_key(void) {
 
 int ps2_is_alt_pressed(void) {
     return alt_pressed;
+}
+
+int ps2_is_ctrl_pressed(void) {
+    return ctrl_pressed;
 }
 
 // C Interrupt Handler for Keyboard (IRQ 1)

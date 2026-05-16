@@ -23,7 +23,8 @@ void htop_init(void) {
     app_register(&htop_app);
 }
 
-void htop_launch(void) {
+void htop_launch(const char* args) {
+    (void)args;
     wm_add_window(150, 150, 600, 320, "htop", htop_draw);
     sys_create_task("htop", 1);
 }

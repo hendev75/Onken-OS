@@ -47,7 +47,8 @@ void terminal_init(void) {
     app_register(&terminal_app);
 }
 
-void terminal_launch(void) {
+void terminal_launch(const char* args) {
+    (void)args;
     wm_add_window(300, 200, 700, 500, "Onken Terminal", terminal_draw);
     sys_create_task("terminal", 1);
 }
@@ -65,9 +66,18 @@ static void exec_command(window_t* w, const char* cmd) {
     // Check if it is a registered application first (dynamic dispatch)
     app_entry_t* app = app_find(argv0);
     if (app) {
-        app->launch();
-        char msg[64];
-        xsprintf(msg, "Launched %s application.", app->name);
+        char* args = strtok(NULL, "");
+        if (args) {
+            while (*args == ' ') args++; // Trim leading spaces
+            if (strlen(args) == 0) args = 0;
+        }
+        app->launch(args);
+        char msg[128];
+        if (args) {
+            xsprintf(msg, "Launched %s with args: %s", app->name, args);
+        } else {
+            xsprintf(msg, "Launched %s application.", app->name);
+        }
         print_to_shell(msg, 0x00FF00);
         return;
     }

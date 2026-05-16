@@ -6,7 +6,7 @@ typedef struct {
     const char* title;
     const char* description;
     void (*init)(void);
-    void (*launch)(void);
+    void (*launch)(const char* args);
     void (*draw)(void* self);
     void (*handle_key)(char c);
 } app_entry_t;

@@ -11,3 +11,4 @@ uint32_t sys_get_tasks(task_t* list_out, uint32_t max_tasks);
 char sys_get_char(void);
 task_t* sys_create_task(const char* name, uint8_t is_kernel);
 void sys_destroy_task(uint32_t pid);
+int sys_is_ctrl_pressed(void);

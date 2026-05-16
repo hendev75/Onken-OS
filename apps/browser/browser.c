@@ -19,7 +19,8 @@ void browser_init(void) {
     app_register(&browser_app);
 }
 
-void browser_launch(void) {
+void browser_launch(const char* args) {
+    (void)args;
     wm_add_window(150, 100, 800, 500, "Onken Browser", browser_draw);
     sys_create_task("browser", 1);
 }

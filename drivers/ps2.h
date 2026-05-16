@@ -10,3 +10,4 @@ void ps2_init(void);
 void ps2_poll(void);
 char ps2_get_last_key(void);
 int ps2_is_alt_pressed(void);
+int ps2_is_ctrl_pressed(void);

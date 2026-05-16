@@ -22,7 +22,8 @@ void settings_init(void) {
     app_register(&settings_app);
 }
 
-void settings_launch(void) {
+void settings_launch(const char* args) {
+    (void)args;
     wm_add_window(250, 200, 400, 300, "Settings", settings_draw);
     sys_create_task("settings", 1);
 }

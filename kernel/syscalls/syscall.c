@@ -50,3 +50,7 @@ task_t* sys_create_task(const char* name, uint8_t is_kernel) {
 void sys_destroy_task(uint32_t pid) {
     task_destroy(pid);
 }
+
+int sys_is_ctrl_pressed(void) {
+    return ps2_is_ctrl_pressed();
+}

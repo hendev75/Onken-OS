@@ -19,7 +19,8 @@ void files_init(void) {
     app_register(&files_app);
 }
 
-void files_launch(void) {
+void files_launch(const char* args) {
+    (void)args;
     wm_add_window(200, 150, 600, 400, "File Explorer", files_draw);
     sys_create_task("files", 1);
 }

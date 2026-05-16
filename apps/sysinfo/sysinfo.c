@@ -19,7 +19,8 @@ void sysinfo_init(void) {
     app_register(&sysinfo_app);
 }
 
-void sysinfo_launch(void) {
+void sysinfo_launch(const char* args) {
+    (void)args;
     wm_add_window(200, 100, 500, 300, "System Info", sysinfo_draw);
     sys_create_task("sysinfo", 1);
 }

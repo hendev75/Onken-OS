@@ -162,7 +162,7 @@ void shell_loop(void) {
     
     // Launch terminal app as standard boot window
     app_entry_t* term = app_find("terminal");
-    if (term) term->launch();
+    if (term) term->launch(0);
 
     int full_redraw = 1;
     int32_t last_mx = -1, last_my = -1;
@@ -207,19 +207,19 @@ void shell_loop(void) {
                 start_menu_visible = !start_menu_visible;
                 full_redraw = 1;
             } else {
-                if (start_menu_visible && mouse_x >= 10 && mouse_x <= 210 && mouse_y >= (int32_t)fb_height - 350 && mouse_y <= (int32_t)fb_height - 50) {
+            if (start_menu_visible && mouse_x >= 10 && mouse_x <= 210 && mouse_y >= (int32_t)fb_height - 350 && mouse_y <= (int32_t)fb_height - 50) {
                     if (mouse_y >= (int32_t)fb_height - 290 && mouse_y <= (int32_t)fb_height - 270) { 
                         app_entry_t* app = app_find("browser");
-                        if (app) app->launch();
+                        if (app) app->launch(0);
                     } else if (mouse_y >= (int32_t)fb_height - 250 && mouse_y <= (int32_t)fb_height - 230) {
                         app_entry_t* app = app_find("sysinfo");
-                        if (app) app->launch();
+                        if (app) app->launch(0);
                     } else if (mouse_y >= (int32_t)fb_height - 210 && mouse_y <= (int32_t)fb_height - 190) { 
                         app_entry_t* app = app_find("files");
-                        if (app) app->launch();
+                        if (app) app->launch(0);
                     } else if (mouse_y >= (int32_t)fb_height - 170 && mouse_y <= (int32_t)fb_height - 150) { 
                         app_entry_t* app = app_find("settings");
-                        if (app) app->launch();
+                        if (app) app->launch(0);
                     } else if (mouse_y >= (int32_t)fb_height - 90 && mouse_y <= (int32_t)fb_height - 70) {
                         outw(0x604, 0x2000); // QEMU ACPI shutdown
                         outw(0xB004, 0x2000); // Bochs shutdown fallback
@@ -250,7 +250,7 @@ void shell_loop(void) {
                         extern volatile uint64_t kernel_ticks;
                         if (kernel_ticks - last_click_time < 30 && i == last_click_x) { 
                             app_entry_t* app = app_find(icons[i].app_name);
-                            if (app) app->launch();
+                            if (app) app->launch(0);
                             start_menu_visible = 0;
                             full_redraw = 1;
                         }
