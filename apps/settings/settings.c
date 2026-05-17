@@ -30,19 +30,23 @@ void settings_launch(const char* args) {
 
 void settings_draw(void* self) {
     window_t* w = (window_t*)self;
-    fb_print("Appearance Settings", w->x + 20, w->y + 40, 0xFFFFFF, 0x111111);
+    fb_print("Appearance Settings", w->x + 20, w->y + 40, 0x882200, 0xC0C0C0);
     
-    fb_rect(w->x + 20, w->y + 70, 200, 30, ui_theme == 1 ? 0x008080 : 0x444444);
-    fb_print("Retro Theme", w->x + 30, w->y + 80, 0xFFFFFF, ui_theme == 1 ? 0x008080 : 0x444444);
+    // Retro Theme Button (sunken when active)
+    draw_retro_3d_panel(w->x + 20, w->y + 70, 200, 30, ui_theme == 1);
+    fb_print("Retro Theme", w->x + 30, w->y + 81, 0x000000, 0xC0C0C0);
     
-    fb_rect(w->x + 20, w->y + 110, 200, 30, ui_theme == 0 ? 0x4A90E2 : 0x444444);
-    fb_print("Modern Theme", w->x + 30, w->y + 120, 0xFFFFFF, ui_theme == 0 ? 0x4A90E2 : 0x444444);
-
-    fb_print("Wallpaper Settings", w->x + 20, w->y + 160, 0xFFFFFF, 0x111111);
-
-    fb_rect(w->x + 20, w->y + 190, 200, 30, wallpaper_mode == 1 ? 0x008080 : 0x444444);
-    fb_print("Solid Teal", w->x + 30, w->y + 200, 0xFFFFFF, wallpaper_mode == 1 ? 0x008080 : 0x444444);
-
-    fb_rect(w->x + 20, w->y + 230, 200, 30, wallpaper_mode == 0 ? 0x4A90E2 : 0x444444);
-    fb_print("BoredOS Space", w->x + 30, w->y + 240, 0xFFFFFF, wallpaper_mode == 0 ? 0x4A90E2 : 0x444444);
+    // Modern Theme Button (sunken when active)
+    draw_retro_3d_panel(w->x + 20, w->y + 110, 200, 30, ui_theme == 0);
+    fb_print("Modern Theme", w->x + 30, w->y + 121, 0x000000, 0xC0C0C0);
+ 
+    fb_print("Wallpaper Settings", w->x + 20, w->y + 160, 0x882200, 0xC0C0C0);
+ 
+    // Solid Teal Button (sunken when active)
+    draw_retro_3d_panel(w->x + 20, w->y + 190, 200, 30, wallpaper_mode == 1);
+    fb_print("Solid Teal", w->x + 30, w->y + 201, 0x000000, 0xC0C0C0);
+ 
+    // BoredOS Space Button (sunken when active)
+    draw_retro_3d_panel(w->x + 20, w->y + 230, 200, 30, wallpaper_mode == 0);
+    fb_print("BoredOS Space", w->x + 30, w->y + 241, 0x000000, 0xC0C0C0);
 }

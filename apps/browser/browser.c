@@ -27,14 +27,25 @@ void browser_launch(const char* args) {
 
 void browser_draw(void* self) {
     window_t* w = (window_t*)self;
-    fb_rect(w->x + 10, w->y + 35, w->w - 20, 20, 0x222222);
-    fb_print("URL: https://onken-search.org", w->x + 15, w->y + 40, 0x00FF00, 0x222222);
     
-    fb_print("Onken Search Engine v1.0", w->x + (w->w - 24*8)/2, w->y + 80, 0xFFFFFF, 0x111111);
-    fb_rect(w->x + (w->w - 200)/2, w->y + 120, 200, 30, 0x333333);
-    fb_print("Search", w->x + (w->w - 6*8)/2, w->y + 130, 0xFFFFFF, 0x333333);
+    // Draw 3D sunken URL Address Bar container
+    draw_retro_3d_panel(w->x + 10, w->y + 35, w->w - 20, 22, 1);
+    fb_rect(w->x + 12, w->y + 37, w->w - 24, 18, 0xFFFFFF);
+    fb_print("URL: https://onken-search.org", w->x + 16, w->y + 42, 0x000000, 0xFFFFFF);
     
-    fb_print("Featured News:", w->x + 20, w->y + 180, 0xF5A623, 0x111111);
-    fb_print("- Onken OS revolutionizes OS development!", w->x + 20, w->y + 205, 0xBDC3C7, 0x111111);
-    fb_print("- Diff-based rendering makes dragging butter-smooth.", w->x + 20, w->y + 225, 0xBDC3C7, 0x111111);
+    // Draw 3D sunken Web Viewport container
+    draw_retro_3d_panel(w->x + 10, w->y + 65, w->w - 20, w->h - 75, 1);
+    fb_rect(w->x + 12, w->y + 67, w->w - 24, w->h - 79, 0xFFFFFF); // Solid white webpage content area
+    
+    // Web Page Content (rendered on white background)
+    fb_print("Onken Search Engine v1.0", w->x + (w->w - 24*8)/2, w->y + 85, 0x000000, 0xFFFFFF);
+    
+    // Search Submit Button (raised retro grey button)
+    draw_retro_3d_panel(w->x + (w->w - 150)/2, w->y + 115, 150, 26, 0);
+    fb_print("Search", w->x + (w->w - 6*8)/2, w->y + 124, 0x000000, 0xC0C0C0);
+    
+    // News Feed on white background
+    fb_print("Featured News:", w->x + 24, w->y + 175, 0x882200, 0xFFFFFF);
+    fb_print("- Onken OS revolutionizes OS development!", w->x + 24, w->y + 200, 0x000000, 0xFFFFFF);
+    fb_print("- Diff-based rendering makes dragging butter-smooth.", w->x + 24, w->y + 220, 0x000000, 0xFFFFFF);
 }

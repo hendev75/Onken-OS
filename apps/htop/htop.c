@@ -31,6 +31,10 @@ void htop_launch(const char* args) {
 
 void htop_draw(void* self) {
     window_t* w = (window_t*)self;
+    
+    // Fill the inner sunken panel with a solid dark grey console background
+    fb_rect(w->x + 6, w->y + 26, w->w - 12, w->h - 32, 0x111111);
+    
     fb_print("htop - Task Manager", w->x + 10, w->y + 35, 0x00FF00, 0x111111);
 
     // 1. Calculate Real CPU Usage

@@ -327,7 +327,7 @@ void shell_loop(void) {
                 if (mouse_x >= icons[i].x && mouse_x <= icons[i].x + icons[i].w &&
                     mouse_y >= icons[i].y && mouse_y <= icons[i].y + icons[i].h) {
                     extern volatile uint64_t kernel_ticks;
-                    if (kernel_ticks - last_click_time < 35 && i == last_click_x) { 
+                    if (kernel_ticks - last_click_time < 80 && i == last_click_x) { 
                         app_entry_t* app = app_find(icons[i].app_name);
                         if (app) app->launch(0);
                         start_menu_visible = 0;

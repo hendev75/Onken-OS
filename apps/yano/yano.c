@@ -56,13 +56,16 @@ void yano_launch(const char* args) {
 void yano_draw(void* self) {
     window_t* w = (window_t*)self;
     
-    // Yano header
-    fb_rect(w->x + 2, w->y + 22, w->w - 4, 16, 0xDDDDDD);
+    // Fill the inner sunken panel with a solid dark grey editor background first
+    fb_rect(w->x + 6, w->y + 26, w->w - 12, w->h - 32, 0x111111);
+    
+    // Yano header (light grey retro bar)
+    fb_rect(w->x + 6, w->y + 26, w->w - 12, 16, 0xDDDDDD);
     char header[64];
     xsprintf(header, "  UW PICO 5.09               File: %s", current_filename);
-    fb_print(header, w->x + 10, w->y + 26, 0x000000, 0xDDDDDD);
+    fb_print(header, w->x + 12, w->y + 30, 0x000000, 0xDDDDDD);
     
-    // Content area
+    // Content area drawing
     int cx = 0, cy = 0;
     for (uint32_t i = 0; i < yano_len; i++) {
         if (yano_buf[i] == '\n') {
@@ -70,18 +73,23 @@ void yano_draw(void* self) {
             cx = 0;
         } else {
             char temp[2] = {yano_buf[i], '\0'};
-            fb_print(temp, w->x + 10 + cx, w->y + 50 + cy, 0xFFFFFF, 0x111111);
+            // Only draw text if it fits in the editor bounds safely
+            if (w->y + 50 + cy < w->y + w->h - 40) {
+                fb_print(temp, w->x + 12 + cx, w->y + 50 + cy, 0xFFFFFF, 0x111111);
+            }
             cx += 8;
         }
     }
 
-    // Cursor
-    fb_rect(w->x + 10 + cx, w->y + 50 + cy, 8, 12, 0xFFFFFF);
+    // Cursor (blinking or solid white block)
+    if (w->y + 50 + cy < w->y + w->h - 40) {
+        fb_rect(w->x + 12 + cx, w->y + 50 + cy, 8, 12, 0xFFFFFF);
+    }
 
-    // Yano footer
-    fb_rect(w->x + 2, w->y + w->h - 32, w->w - 4, 30, 0xDDDDDD);
-    fb_print("^G Get Help  ^O WriteOut  ^R Read File ^Y Prev Pg", w->x + 10, w->y + w->h - 28, 0x000000, 0xDDDDDD);
-    fb_print("^X Exit      ^J Justify   ^W Where is  ^V Next Pg", w->x + 10, w->y + w->h - 16, 0x000000, 0xDDDDDD);
+    // Yano footer (light grey shortcut bar)
+    fb_rect(w->x + 6, w->y + w->h - 36, w->w - 12, 30, 0xDDDDDD);
+    fb_print("^G Get Help  ^O WriteOut  ^R Read File ^Y Prev Pg", w->x + 12, w->y + w->h - 32, 0x000000, 0xDDDDDD);
+    fb_print("^X Exit      ^J Justify   ^W Where is  ^V Next Pg", w->x + 12, w->y + w->h - 20, 0x000000, 0xDDDDDD);
 }
 
 void yano_handle_key(char c) {

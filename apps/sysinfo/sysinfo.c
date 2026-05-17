@@ -28,21 +28,21 @@ void sysinfo_launch(const char* args) {
 void sysinfo_draw(void* self) {
     window_t* w = (window_t*)self;
     
-    // ASCII Banner
-    fb_print("  ____  _   _ _  _______ _   _ ", w->x + 20, w->y + 40, 0x50E3C2, 0x111111);
-    fb_print(" / __ \\| \\ | | |/ / ____| \\ | |", w->x + 20, w->y + 52, 0x50E3C2, 0x111111);
-    fb_print("| |  | |  \\| | ' /| |__ |  \\| |", w->x + 20, w->y + 64, 0x50E3C2, 0x111111);
-    fb_print("| |  | | . ` |  < |  __|| . ` |", w->x + 20, w->y + 76, 0x50E3C2, 0x111111);
-    fb_print("| |__| | |\\  | . \\| |___| |\\  |", w->x + 20, w->y + 88, 0x50E3C2, 0x111111);
-    fb_print(" \\____/|_| \\_|_|\\_\\_____|_| \\_|", w->x + 20, w->y + 100, 0x50E3C2, 0x111111);
+    // ASCII Banner in deep Amiga Blue!
+    fb_print("  ____  _   _ _  _______ _   _ ", w->x + 20, w->y + 40, 0x0055AA, 0xC0C0C0);
+    fb_print(" / __ \\| \\ | | |/ / ____| \\ | |", w->x + 20, w->y + 52, 0x0055AA, 0xC0C0C0);
+    fb_print("| |  | |  \\| | ' /| |__ |  \\| |", w->x + 20, w->y + 64, 0x0055AA, 0xC0C0C0);
+    fb_print("| |  | | . ` |  < |  __|| . ` |", w->x + 20, w->y + 76, 0x0055AA, 0xC0C0C0);
+    fb_print("| |__| | |\\  | . \\| |___| |\\  |", w->x + 20, w->y + 88, 0x0055AA, 0xC0C0C0);
+    fb_print(" \\____/|_| \\_|_|\\_\\_____|_| \\_|", w->x + 20, w->y + 100, 0x0055AA, 0xC0C0C0);
 
-    fb_print("Made by Ayham & Mason", w->x + 20, w->y + 130, 0xF5A623, 0x111111);
-    fb_print("OS Version  : Onken OS Revolution v3.0.0", w->x + 20, w->y + 160, 0xFFFFFF, 0x111111);
-    fb_print("Kernel      : Onken Microkernel x86_64", w->x + 20, w->y + 175, 0xFFFFFF, 0x111111);
-    fb_print("Graphics    : Desktop Compositor Engine", w->x + 20, w->y + 190, 0xFFFFFF, 0x111111);
+    fb_print("Made by Ayham & Mason", w->x + 20, w->y + 130, 0x882200, 0xC0C0C0);
+    fb_print("OS Version  : Onken OS Revolution v3.0.0", w->x + 20, w->y + 160, 0x000000, 0xC0C0C0);
+    fb_print("Kernel      : Onken Microkernel x86_64", w->x + 20, w->y + 175, 0x000000, 0xC0C0C0);
+    fb_print("Graphics    : Desktop Compositor Engine", w->x + 20, w->y + 190, 0x000000, 0xC0C0C0);
     
     char uptime_str[64];
     xsprintf(uptime_str, "Uptime      : %d.%03ds (Ticks: %d)", 
              (uint32_t)(sys_uptime() / 1000), (uint32_t)(sys_uptime() % 1000), (uint32_t)sys_uptime());
-    fb_print(uptime_str, w->x + 20, w->y + 205, 0xFFFFFF, 0x111111);
+    fb_print(uptime_str, w->x + 20, w->y + 205, 0x000000, 0xC0C0C0);
 }

@@ -27,15 +27,16 @@ void files_launch(const char* args) {
 
 void files_draw(void* self) {
     window_t* w = (window_t*)self;
-    fb_print("System Drive (C:)", w->x + 20, w->y + 40, 0xF5A623, 0x111111);
     
-    fb_print("[DIR] boot/", w->x + 20, w->y + 70, 0x4A90E2, 0x111111);
-    fb_print("[DIR] drivers/", w->x + 20, w->y + 90, 0x4A90E2, 0x111111);
-    fb_print("[DIR] gui/", w->x + 20, w->y + 110, 0x4A90E2, 0x111111);
-    fb_print("[DIR] kernel/", w->x + 20, w->y + 130, 0x4A90E2, 0x111111);
-    fb_print("[DIR] shell/", w->x + 20, w->y + 150, 0x4A90E2, 0x111111);
+    fb_print("System Drive (C:)", w->x + 20, w->y + 40, 0x882200, 0xC0C0C0);
     
-    fb_print("[FILE] Makefile", w->x + 200, w->y + 70, 0xBDC3C7, 0x111111);
-    fb_print("[FILE] limine.conf", w->x + 200, w->y + 90, 0xBDC3C7, 0x111111);
-    fb_print("[FILE] readme.txt", w->x + 200, w->y + 110, 0xBDC3C7, 0x111111);
+    fb_print("[DIR]  boot/", w->x + 20, w->y + 70, 0x0055AA, 0xC0C0C0);
+    fb_print("[DIR]  drivers/", w->x + 20, w->y + 90, 0x0055AA, 0xC0C0C0);
+    fb_print("[DIR]  gui/", w->x + 20, w->y + 110, 0x0055AA, 0xC0C0C0);
+    fb_print("[DIR]  kernel/", w->x + 20, w->y + 130, 0x0055AA, 0xC0C0C0);
+    fb_print("[DIR]  shell/", w->x + 20, w->y + 150, 0x0055AA, 0xC0C0C0);
+    
+    fb_print("[FILE] Makefile", w->x + 240, w->y + 70, 0x222222, 0xC0C0C0);
+    fb_print("[FILE] limine.conf", w->x + 240, w->y + 90, 0x222222, 0xC0C0C0);
+    fb_print("[FILE] readme.txt", w->x + 240, w->y + 110, 0x222222, 0xC0C0C0);
 }
