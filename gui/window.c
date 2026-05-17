@@ -12,11 +12,11 @@ theme_t current_theme = {
     .border_light = 0xFFFFFF,
     .border_dark = 0x555555,
     .border_mid = 0xC0C0C0,
-    .titlebar_active = 0x224488,         // Classic Active Royal Blue
-    .titlebar_active_grad = 0x6688DD,    // Light Blue Gradient
+    .titlebar_active = 0x0055AA,         // Classic Active Amiga Blue
+    .titlebar_active_grad = 0x3A6CA3,    // Amiga Slate Blue Gradient
     .titlebar_inactive = 0x555555,       // Inactive Dark Grey
     .titlebar_inactive_grad = 0x888888,  // Inactive Light Grey
-    .bg_desktop = 0x008080,              // Retro Workbench Teal
+    .bg_desktop = 0x3B6790,              // Retro Workbench Slate Blue
     .text_active = 0xFFFFFF,
     .text_inactive = 0xCCCCCC
 };

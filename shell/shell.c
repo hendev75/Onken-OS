@@ -434,16 +434,13 @@ void shell_loop(void) {
             // Cache desktop surface before cursor
             fb_commit_desktop();
 
-            fb_draw_cursor(mouse_x, mouse_y);
+            fb_show_cursor(mouse_x, mouse_y);
             fb_swap();
             
             full_redraw = 0; // successfully finished redraw
         } else if (mouse_x != last_mx || mouse_y != last_my) {
             // zero CPU mouse motion pass
-            if (last_mx >= 0 && last_my >= 0) {
-                fb_restore_desktop_rect(last_mx, last_my, 16, 16);
-            }
-            fb_draw_cursor(mouse_x, mouse_y);
+            fb_show_cursor(mouse_x, mouse_y);
             fb_swap();
         }
 

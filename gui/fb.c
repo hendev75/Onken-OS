@@ -102,8 +102,8 @@ void fb_render_wallpaper() {
     back_buffer = wallpaper_cache;
     
     if (wallpaper_mode == 1) {
-        // Retro theme: Solid Teal
-        fb_rect(0, 0, fb_width, fb_height, 0x008080);
+        // Retro theme: Solid Slate Blue (Amiga Workbench look!)
+        fb_rect(0, 0, fb_width, fb_height, 0x3B6790);
     } else if (wallpaper_mode == 0) {
         // BoredOS style gradient: deep dark blue to black
         fb_gradient(0, 0, fb_width, fb_height, 0x1A1A2E, 0x16213E);
@@ -211,20 +211,60 @@ void fb_print(const char* str, uint32_t x, uint32_t y, uint32_t fg, uint32_t bg)
     }
 }
 
-void fb_draw_cursor(int32_t x, int32_t y) {
-    // Draw cursor (simple white triangle with black border)
+static uint32_t cursor_backup[32 * 32];
+static int32_t backup_x = -1, backup_y = -1;
+static uint32_t backup_w = 0, backup_h = 0;
+
+void fb_hide_cursor() {
+    if (backup_x == -1) return;
+    for (uint32_t y = 0; y < backup_h; y++) {
+        uint32_t dest_y = backup_y + y;
+        uint32_t row_offset = dest_y * (fb_pitch / 4);
+        for (uint32_t x = 0; x < backup_w; x++) {
+            uint32_t dest_x = backup_x + x;
+            back_buffer[row_offset + dest_x] = cursor_backup[y * 32 + x];
+        }
+    }
+    backup_x = -1;
+}
+
+void fb_show_cursor(int32_t x, int32_t y) {
+    fb_hide_cursor();
+    
+    backup_x = x;
+    backup_y = y;
+    backup_w = 32;
+    backup_h = 32;
+    
+    if (backup_x < 0) backup_x = 0;
+    if (backup_y < 0) backup_y = 0;
+    if (backup_x + (int)backup_w > (int)fb_width) backup_w = fb_width - backup_x;
+    if (backup_y + (int)backup_h > (int)fb_height) backup_h = fb_height - backup_y;
+    
+    for (uint32_t cy = 0; cy < backup_h; cy++) {
+        uint32_t src_y = backup_y + cy;
+        uint32_t row_offset = src_y * (fb_pitch / 4);
+        for (uint32_t cx = 0; cx < backup_w; cx++) {
+            uint32_t src_x = backup_x + cx;
+            cursor_backup[cy * 32 + cx] = back_buffer[row_offset + src_x];
+        }
+    }
+    
     for(int cy = 0; cy < 12; cy++) {
         for(int cx = 0; cx <= cy; cx++) {
-            if (cx == 0 || cy == 11 || cx == cy) {
-                fb_plot(x + cx, y + cy, 0x000000); // Black border
-            } else {
-                fb_plot(x + cx, y + cy, 0xFFFFFF); // White fill
+            if (x + cx < (int)fb_width && y + cy < (int)fb_height) {
+                if (cx == 0 || cy == 11 || cx == cy) {
+                    fb_plot(x + cx, y + cy, 0x000000);
+                } else {
+                    fb_plot(x + cx, y + cy, 0xFFFFFF);
+                }
             }
         }
     }
-    // A small tail
-    fb_plot(x+5, y+12, 0x000000); fb_plot(x+6, y+12, 0x000000); fb_plot(x+7, y+12, 0x000000);
-    fb_plot(x+6, y+13, 0xFFFFFF); fb_plot(x+7, y+13, 0xFFFFFF); fb_plot(x+8, y+13, 0x000000);
-    fb_plot(x+7, y+14, 0xFFFFFF); fb_plot(x+8, y+14, 0xFFFFFF); fb_plot(x+9, y+14, 0x000000);
-    fb_plot(x+8, y+15, 0x000000); fb_plot(x+9, y+15, 0x000000); fb_plot(x+10, y+15, 0x000000);
+    if (x + 10 < (int)fb_width && y + 15 < (int)fb_height) {
+        fb_plot(x+5, y+12, 0x000000); fb_plot(x+6, y+12, 0x000000); fb_plot(x+7, y+12, 0x000000);
+        fb_plot(x+6, y+13, 0xFFFFFF); fb_plot(x+7, y+13, 0xFFFFFF); fb_plot(x+8, y+13, 0x000000);
+        fb_plot(x+7, y+14, 0xFFFFFF); fb_plot(x+8, y+14, 0xFFFFFF); fb_plot(x+9, y+14, 0x000000);
+        fb_plot(x+8, y+15, 0x000000); fb_plot(x+9, y+15, 0x000000); fb_plot(x+10, y+15, 0x000000);
+    }
 }
