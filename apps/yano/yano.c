@@ -6,14 +6,15 @@
 #include "../../kernel/string.h"
 #include "../../kernel/fs.h"
 
-static char yano_buf[1024];
+#define YANO_BUF_SIZE 4096
+static char yano_buf[YANO_BUF_SIZE];
 static uint32_t yano_len = 0;
 static char current_filename[32] = "new.txt";
 static char window_title[64] = "yano - new.txt";
 
 static app_entry_t yano_app = {
     .name = "yano",
-    .title = "yano", // Base match
+    .title = "yano",
     .description = "Text Editor",
     .init = yano_init,
     .launch = yano_launch,
@@ -26,17 +27,23 @@ void yano_init(void) {
 }
 
 void yano_launch(const char* args) {
+    // Reset buffer
+    memset(yano_buf, 0, YANO_BUF_SIZE);
+    yano_len = 0;
+    
     if (args && strlen(args) > 0) {
         strncpy(current_filename, args, 31);
         current_filename[31] = '\0';
         
-        // Open file
+        // Try to open file from VFS
         vfs_file_t* file = vfs_open(current_filename);
-        if (file) {
-            strncpy(yano_buf, file->data, 1023);
-            yano_buf[1023] = '\0';
-            yano_len = file->size;
-        } else {
+        if (file && file->size > 0) {
+            size_t copy_len = file->size;
+            if (copy_len > YANO_BUF_SIZE - 1) copy_len = YANO_BUF_SIZE - 1;
+            memcpy(yano_buf, file->data, copy_len);
+            yano_buf[copy_len] = '\0';
+            yano_len = (uint32_t)copy_len;
+        } else if (!file) {
             // Create new file in VFS
             vfs_create(current_filename);
             yano_buf[0] = '\0';
@@ -44,7 +51,8 @@ void yano_launch(const char* args) {
         }
     } else {
         strncpy(current_filename, "new.txt", 31);
-        strncpy(yano_buf, "Welcome to yano!\nStart typing here...\nCtrl+S to Save, Ctrl+X to Exit.", 1023);
+        const char* welcome = "Welcome to yano!\nStart typing here...\nCtrl+S to Save, Ctrl+X to Exit.";
+        strncpy(yano_buf, welcome, YANO_BUF_SIZE - 1);
         yano_len = strlen(yano_buf);
     }
     
@@ -56,40 +64,45 @@ void yano_launch(const char* args) {
 void yano_draw(void* self) {
     window_t* w = (window_t*)self;
     
-    // Fill the inner sunken panel with a solid dark grey editor background first
+    // Dark editor background
     fb_rect(w->x + 6, w->y + 26, w->w - 12, w->h - 32, 0x111111);
     
-    // Yano header (light grey retro bar)
+    // Header bar
     fb_rect(w->x + 6, w->y + 26, w->w - 12, 16, 0xDDDDDD);
-    char header[64];
-    xsprintf(header, "  UW PICO 5.09               File: %s", current_filename);
+    char header[80];
+    xsprintf(header, "  YANO Editor  |  File: %s  |  %d bytes", current_filename, yano_len);
     fb_print(header, w->x + 12, w->y + 30, 0x000000, 0xDDDDDD);
     
-    // Content area drawing
+    // Content area
     int cx = 0, cy = 0;
+    int max_y = (int)w->h - 72;
+    
     for (uint32_t i = 0; i < yano_len; i++) {
         if (yano_buf[i] == '\n') {
-            cy += 15;
+            cy += 14;
             cx = 0;
         } else {
-            char temp[2] = {yano_buf[i], '\0'};
-            // Only draw text if it fits in the editor bounds safely
-            if (w->y + 50 + cy < w->y + w->h - 40) {
-                fb_print(temp, w->x + 12 + cx, w->y + 50 + cy, 0xFFFFFF, 0x111111);
+            if (cy < max_y) {
+                char temp[2] = {yano_buf[i], '\0'};
+                fb_print(temp, w->x + 12 + cx, w->y + 48 + cy, 0xFFFFFF, 0x111111);
             }
             cx += 8;
+            if (cx > (int)w->w - 30) {
+                cx = 0;
+                cy += 14;
+            }
         }
     }
 
-    // Cursor (blinking or solid white block)
-    if (w->y + 50 + cy < w->y + w->h - 40) {
-        fb_rect(w->x + 12 + cx, w->y + 50 + cy, 8, 12, 0xFFFFFF);
+    // Cursor
+    if (cy < max_y) {
+        fb_rect(w->x + 12 + cx, w->y + 48 + cy, 8, 12, 0xFFFFFF);
     }
 
-    // Yano footer (light grey shortcut bar)
+    // Footer shortcuts bar
     fb_rect(w->x + 6, w->y + w->h - 36, w->w - 12, 30, 0xDDDDDD);
-    fb_print("^G Get Help  ^O WriteOut  ^R Read File ^Y Prev Pg", w->x + 12, w->y + w->h - 32, 0x000000, 0xDDDDDD);
-    fb_print("^X Exit      ^J Justify   ^W Where is  ^V Next Pg", w->x + 12, w->y + w->h - 20, 0x000000, 0xDDDDDD);
+    fb_print("^S Save  ^X Exit  ^O WriteOut  Backspace=Delete", w->x + 12, w->y + w->h - 32, 0x000000, 0xDDDDDD);
+    fb_print("Type normally. Changes auto-tracked.", w->x + 12, w->y + w->h - 20, 0x555555, 0xDDDDDD);
 }
 
 void yano_handle_key(char c) {
@@ -97,28 +110,26 @@ void yano_handle_key(char c) {
     
     if (ctrl) {
         if (c == 'x' || c == 'X') {
-            // Exit yano
             window_t* active_w = wm_get_active();
             if (active_w) {
                 active_w->closed = 1;
-                sys_print("yano closed.", 0xFFFFFF);
             }
             return;
         } else if (c == 's' || c == 'S' || c == 'o' || c == 'O') {
-            // Save file
+            // Save file to VFS
+            vfs_file_t* f = vfs_open(current_filename);
+            if (!f) {
+                vfs_create(current_filename);
+            }
             vfs_write(current_filename, yano_buf, yano_len);
-            
-            char msg[64];
-            xsprintf(msg, "Saved %d bytes to VFS:%s", yano_len, current_filename);
-            sys_print(msg, 0x00FF00);
             return;
         }
-        return; // Discard other ctrl combos
+        return;
     }
 
-    // Standard Typing
+    // Standard typing
     if (c == '\n' || c == '\r') {
-        if (yano_len < 1023) {
+        if (yano_len < YANO_BUF_SIZE - 1) {
             yano_buf[yano_len++] = '\n';
             yano_buf[yano_len] = '\0';
         }
@@ -127,7 +138,7 @@ void yano_handle_key(char c) {
             yano_buf[--yano_len] = '\0';
         }
     } else if (c >= 32 && c < 127) {
-        if (yano_len < 1023) {
+        if (yano_len < YANO_BUF_SIZE - 1) {
             yano_buf[yano_len++] = c;
             yano_buf[yano_len] = '\0';
         }

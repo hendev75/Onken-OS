@@ -29,6 +29,8 @@ OBJ = boot/boot.o \
       apps/settings/settings.o \
       apps/terminal/terminal.o \
       drivers/sound.o \
+      drivers/rtc.o \
+      drivers/pci.o \
       apps/player/player.o \
       apps/imageviewer/imageviewer.o
 TARGET = oneko.bin

@@ -5,6 +5,8 @@
 #include "../kernel/fs.h"
 #include "../gui/window.h"
 #include "../drivers/sound.h"
+#include "../drivers/rtc.h"
+#include "../drivers/pci.h"
 
 // Dynamic App and Subsystem Headers
 #include "../kernel/tasking/app.h"
@@ -46,8 +48,6 @@ static int start_menu_visible = 0;
 static int menu_visible = 0;
 static int menu_x = 0, menu_y = 0;
 
-static uint32_t last_click_time = 0;
-static int last_click_x = -1;
 
 static int task_switcher_visible = 0;
 
@@ -344,25 +344,21 @@ void shell_loop(void) {
                 full_redraw = 1;
             }
             
-            // Check double-click launcher
-            int double_clicked = 0;
+            // Desktop icon single-click launcher (reliable under QEMU)
+            int icon_clicked = 0;
             for(int i = 0; i < 3; i++) {
                 if (mouse_x >= icons[i].x && mouse_x <= icons[i].x + icons[i].w &&
-                    mouse_y >= icons[i].y && mouse_y <= icons[i].y + icons[i].h) {
-                    extern volatile uint64_t kernel_ticks;
-                    if (kernel_ticks - last_click_time < 80 && i == last_click_x) { 
-                        app_entry_t* app = app_find(icons[i].app_name);
-                        if (app) app->launch(0);
-                        start_menu_visible = 0;
-                        full_redraw = 1;
-                        double_clicked = 1;
-                    }
-                    last_click_time = kernel_ticks;
-                    last_click_x = i;
+                    mouse_y >= icons[i].y && mouse_y <= icons[i].y + icons[i].h + 16) {
+                    app_entry_t* app = app_find(icons[i].app_name);
+                    if (app) app->launch(0);
+                    start_menu_visible = 0;
+                    full_redraw = 1;
+                    icon_clicked = 1;
+                    break;
                 }
             }
             
-            if (!double_clicked) {
+            if (!icon_clicked) {
                 // Check Start Menu trigger button
                 if (mouse_x >= 10 && mouse_x <= 110 &&
                     mouse_y >= (int32_t)fb_height - 38 && mouse_y <= (int32_t)fb_height - 8) {
@@ -539,7 +535,12 @@ void shell_loop(void) {
             }
             
             fb_print("START", 35, fb_height - 28, ui_theme == 1 ? 0x000000 : 0xFFFFFF, ui_theme == 1 ? 0xC0C0C0 : (mouse_x >= 10 && mouse_x <= 110 && mouse_y >= (int32_t)fb_height - 38 && mouse_y <= (int32_t)fb_height - 8 ? 0x4A90E2 : 0x2C3E50));
-            fb_print("01:30 AM", fb_width - 80, fb_height - 28, ui_theme == 1 ? 0x000000 : 0xAAAAAA, ui_theme == 1 ? 0xC0C0C0 : 0x1A1A1A);
+            // Real-time clock from CMOS RTC
+            {
+                char time_str[8];
+                rtc_get_time_string(time_str, 8);
+                fb_print(time_str, fb_width - 60, fb_height - 28, ui_theme == 1 ? 0x000000 : 0xAAAAAA, ui_theme == 1 ? 0xC0C0C0 : 0x1A1A1A);
+            }
 
             if (menu_visible) draw_context_menu(menu_x, menu_y);
             if (start_menu_visible) draw_start_menu();

@@ -3,7 +3,7 @@
 #include <stddef.h>
 
 #define MAX_FILES 64
-#define MAX_FILE_SIZE 4096
+#define MAX_FILE_SIZE 16384
 
 typedef struct {
     char name[32];
@@ -16,5 +16,7 @@ void vfs_init(void);
 int vfs_create(const char* name);
 vfs_file_t* vfs_open(const char* name);
 int vfs_write(const char* name, const char* data, size_t len);
+int vfs_read(const char* name, char* buf, size_t max_len);
 void vfs_list(void (*print_fn)(const char*));
 int vfs_remove(const char* name);
+vfs_file_t* vfs_get_by_index(int idx);
