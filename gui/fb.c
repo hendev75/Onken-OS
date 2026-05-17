@@ -317,3 +317,56 @@ void fb_show_cursor(int32_t x, int32_t y) {
         fb_plot(x+8, y+15, 0x000000); fb_plot(x+9, y+15, 0x000000); fb_plot(x+10, y+15, 0x000000);
     }
 }
+
+// STB Image integration
+extern unsigned char *stbi_load_from_memory(unsigned char const *buffer, int len, int *x, int *y, int *channels_in_file, int desired_channels);
+extern void stbi_image_free(void *retval_from_stbi_load);
+
+void fb_draw_image(const char* data, size_t size, int screen_x, int screen_y, int max_w, int max_h) {
+    int w, h, channels;
+    unsigned char *img = stbi_load_from_memory((const unsigned char*)data, size, &w, &h, &channels, 4);
+    if (!img) {
+        // Fallback or error text
+        fb_print("Unsupported image format.", screen_x + 10, screen_y + 10, 0xFF5555, 0x222222);
+        return;
+    }
+
+    // Scale to fit max_w, max_h while maintaining aspect ratio
+    int draw_w = w;
+    int draw_h = h;
+
+    if (w > max_w || h > max_h) {
+        float scale_w = (float)max_w / w;
+        float scale_h = (float)max_h / h;
+        float scale = (scale_w < scale_h) ? scale_w : scale_h;
+        draw_w = (int)(w * scale);
+        draw_h = (int)(h * scale);
+    }
+    
+    // Center the image
+    int off_x = screen_x + (max_w - draw_w) / 2;
+    int off_y = screen_y + (max_h - draw_h) / 2;
+
+    // Nearest neighbor scaling render
+    for (int y = 0; y < draw_h; y++) {
+        int src_y = (y * h) / draw_h;
+        for (int x = 0; x < draw_w; x++) {
+            int src_x = (x * w) / draw_w;
+            int src_idx = (src_y * w + src_x) * 4;
+            
+            uint8_t r = img[src_idx + 0];
+            uint8_t g = img[src_idx + 1];
+            uint8_t b = img[src_idx + 2];
+            uint8_t a = img[src_idx + 3];
+            
+            if (a > 128) {
+                fb_plot(off_x + x, off_y + y, (r << 16) | (g << 8) | b);
+            }
+        }
+    }
+
+    // Since our memory allocator doesn't really free, we leak the decoded image buffer.
+    // In a real OS with a real allocator, we would call stbi_image_free(img).
+    // For this prototype, we'll let it bump allocate (reloading images will eat RAM).
+    // stbi_image_free(img);
+}

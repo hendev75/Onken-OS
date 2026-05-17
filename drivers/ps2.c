@@ -9,10 +9,14 @@ uint8_t mouse_b_left = 0;
 uint8_t mouse_b_right = 0;
 
 static uint8_t mouse_cycle = 0;
-static uint8_t mouse_byte[3];
+static int8_t mouse_byte[4];
+static int mouse_has_wheel = 0;
+volatile int8_t mouse_scroll_delta = 0;
 static char last_key = 0;
 static int alt_pressed = 0;
 static int ctrl_pressed = 0;
+static int shift_pressed = 0;
+static int super_pressed = 0;
 
 
 static const char kbd_us[128] = {
@@ -77,6 +81,19 @@ void ps2_init(void) {
     mouse_write(0xF6);
     mouse_read();
 
+    // Enable IntelliMouse Scroll Wheel (Magic Sequence)
+    mouse_write(0xF3); mouse_read(); mouse_write(200); mouse_read();
+    mouse_write(0xF3); mouse_read(); mouse_write(100); mouse_read();
+    mouse_write(0xF3); mouse_read(); mouse_write(80);  mouse_read();
+
+    // Get Device ID
+    mouse_write(0xF2);
+    mouse_read();
+    uint8_t id = mouse_read();
+    if (id == 3 || id == 4) {
+        mouse_has_wheel = 1;
+    }
+
     // Enable data reporting
     mouse_write(0xF4);
     mouse_read();
@@ -96,7 +113,15 @@ static void handle_mouse(uint8_t data) {
             break;
         case 2:
             mouse_byte[2] = data;
-            
+            if (mouse_has_wheel) {
+                mouse_cycle++;
+            } else {
+                goto process_mouse;
+            }
+            break;
+        case 3:
+            mouse_byte[3] = data;
+process_mouse:
             // Apply movement
             int dx = mouse_byte[1];
             int dy = mouse_byte[2];
@@ -106,6 +131,12 @@ static void handle_mouse(uint8_t data) {
             
             mouse_x += dx;
             mouse_y -= dy;
+            
+            if (mouse_has_wheel && mouse_cycle == 3) {
+                int8_t dz = mouse_byte[3] & 0x0F;
+                if (mouse_byte[3] & 0x08) dz |= ~0x0F; // sign extension
+                mouse_scroll_delta = -dz; // invert for normal scrolling
+            }
             
             if (mouse_x < 0) mouse_x = 0;
             if (mouse_y < 0) mouse_y = 0;
@@ -130,10 +161,22 @@ static const char kbd_us_shifted[128] = {
     0,   0,   0,   0,   0,   0,   0,   0,   0
 };
 
-static int shift_pressed = 0;
 static int capslock_active = 0;
+static int e0_mode = 0;
 
 static void handle_kbd(uint8_t data) {
+    if (data == 0xE0) {
+        e0_mode = 1;
+        return;
+    }
+
+    if (e0_mode) {
+        if (data == 0x5B || data == 0x5C) super_pressed = 1;
+        else if (data == 0xDB || data == 0xDC) super_pressed = 0;
+        e0_mode = 0;
+        return;
+    }
+
     if (data == 0x38) {
         alt_pressed = 1;
     } else if (data == 0xB8) {
@@ -175,6 +218,14 @@ int ps2_is_alt_pressed(void) {
 
 int ps2_is_ctrl_pressed(void) {
     return ctrl_pressed;
+}
+
+int ps2_is_super_pressed(void) {
+    return super_pressed;
+}
+
+int ps2_is_shift_pressed(void) {
+    return shift_pressed;
 }
 
 // C Interrupt Handler for Keyboard (IRQ 1)

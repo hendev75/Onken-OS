@@ -9,6 +9,8 @@
 #include "../../kernel/time/pit.h"
 #include "../../drivers/rtc.h"
 #include "../../drivers/pci.h"
+#include "../../drivers/cpuid.h"
+#include "../../drivers/ps2.h"
 
 #define MAX_CMD 128
 static char cmd_buf[MAX_CMD];
@@ -23,6 +25,7 @@ typedef struct {
 
 static history_line_t term_history[MAX_HISTORY];
 static int history_count = 0;
+static int term_scroll_offset = 0;
 
 static app_entry_t terminal_app = {
     .name = "terminal",
@@ -48,6 +51,8 @@ void term_history_add(const char* msg, uint32_t color) {
         term_history[MAX_HISTORY - 1].text[127] = '\0';
         term_history[MAX_HISTORY - 1].color = color;
     }
+    // Auto-scroll to bottom on new text
+    term_scroll_offset = 0;
 }
 
 static void show_fastfetch(void) {
@@ -98,7 +103,9 @@ static void show_fastfetch(void) {
     xsprintf(line, "  Kernel:     oneko-kernel 3.0.0-limine");
     term_history_add(line, 0xFFFFFF);
     
-    xsprintf(line, "  Host:       QEMU Virtual Machine");
+    char cpu_brand[64];
+    cpuid_get_brand_string(cpu_brand);
+    xsprintf(line, "  Host:       %s", cpu_brand);
     term_history_add(line, 0xFFFFFF);
     
     xsprintf(line, "  Uptime:     %d min %d sec", up_min, up_sec);
@@ -189,6 +196,12 @@ static void exec_command(window_t* w, const char* cmd) {
         print_to_shell("  ver     - OS version", 0xFFFFFF);
         print_to_shell("  clear   - Clear screen", 0xFFFFFF);
         print_to_shell("  fetch   - System info", 0xFFFFFF);
+        print_to_shell("  hexdump - Hexdump file", 0xFFFFFF);
+        print_to_shell("  echo    - Print text", 0xFFFFFF);
+        print_to_shell("  write   - Write text to file", 0xFFFFFF);
+        print_to_shell("  wc      - Count lines/words/bytes", 0xFFFFFF);
+        print_to_shell("  cp      - Copy file", 0xFFFFFF);
+        print_to_shell("  stat    - File info", 0xFFFFFF);
         print_to_shell("  exit    - Close terminal", 0xFFFFFF);
         
         print_to_shell("Applications:", 0x50E3C2);
@@ -306,6 +319,104 @@ static void exec_command(window_t* w, const char* cmd) {
         print_to_shell(line, 0xFFFFFF);
         xsprintf(line, "Free:  %d MB", (uint32_t)(mem.free_memory / 1024 / 1024));
         print_to_shell(line, 0x00FF00);
+    } else if (strcmp(argv0, "hexdump") == 0) {
+        char* fname = strtok(NULL, " ");
+        if (!fname) { print_to_shell("Usage: hexdump <file>", 0xFFAAAA); }
+        else {
+            vfs_file_t* f = vfs_open(fname);
+            if (!f) print_to_shell("File not found.", 0xD0021B);
+            else {
+                char line_buf[128];
+                for (size_t i = 0; i < f->size; i += 16) {
+                    int n = xsprintf(line_buf, "%08x  ", (uint32_t)i);
+                    for (size_t j = 0; j < 16; j++) {
+                        if (i + j < f->size) {
+                            int hex_val = (uint8_t)f->data[i + j];
+                            line_buf[n++] = "0123456789abcdef"[hex_val >> 4];
+                            line_buf[n++] = "0123456789abcdef"[hex_val & 15];
+                            line_buf[n++] = ' ';
+                        } else {
+                            line_buf[n++] = ' '; line_buf[n++] = ' '; line_buf[n++] = ' ';
+                        }
+                        if (j == 7) line_buf[n++] = ' ';
+                    }
+                    line_buf[n++] = ' '; line_buf[n++] = '|';
+                    for (size_t j = 0; j < 16 && i + j < f->size; j++) {
+                        char c = f->data[i + j];
+                        if (c >= 32 && c <= 126) line_buf[n++] = c;
+                        else line_buf[n++] = '.';
+                    }
+                    line_buf[n++] = '|'; line_buf[n] = '\0';
+                    print_to_shell(line_buf, 0xFFFFFF);
+                    if (i > 16 * 40) { print_to_shell("... (truncated)", 0x888888); break; }
+                }
+            }
+        }
+    } else if (strcmp(argv0, "echo") == 0) {
+        char* text = strtok(NULL, "");
+        if (text) {
+            while (*text == ' ') text++;
+            print_to_shell(text, 0xFFFFFF);
+        }
+    } else if (strcmp(argv0, "write") == 0) {
+        char* fname = strtok(NULL, " ");
+        char* text = strtok(NULL, "");
+        if (!fname || !text) { print_to_shell("Usage: write <file> <text...>", 0xFFAAAA); }
+        else {
+            while (*text == ' ') text++;
+            if (!vfs_open(fname)) vfs_create(fname);
+            vfs_write(fname, text, strlen(text));
+            print_to_shell("Written.", 0x00FF00);
+        }
+    } else if (strcmp(argv0, "wc") == 0) {
+        char* fname = strtok(NULL, " ");
+        if (!fname) { print_to_shell("Usage: wc <file>", 0xFFAAAA); }
+        else {
+            vfs_file_t* f = vfs_open(fname);
+            if (!f) print_to_shell("File not found.", 0xD0021B);
+            else {
+                int words = 0, lines = 0;
+                int in_word = 0;
+                for (size_t i = 0; i < f->size; i++) {
+                    char c = f->data[i];
+                    if (c == '\n') lines++;
+                    if (c == ' ' || c == '\n' || c == '\t' || c == '\r') {
+                        in_word = 0;
+                    } else if (!in_word) {
+                        in_word = 1; words++;
+                    }
+                }
+                char lbuf[64];
+                xsprintf(lbuf, "  %d lines, %d words, %d bytes", lines, words, (int)f->size);
+                print_to_shell(lbuf, 0xFFFFFF);
+            }
+        }
+    } else if (strcmp(argv0, "cp") == 0) {
+        char* src = strtok(NULL, " ");
+        char* dst = strtok(NULL, " ");
+        if (!src || !dst) { print_to_shell("Usage: cp <src> <dst>", 0xFFAAAA); }
+        else {
+            vfs_file_t* f1 = vfs_open(src);
+            if (!f1) print_to_shell("Source not found.", 0xD0021B);
+            else {
+                vfs_create(dst);
+                vfs_write(dst, f1->data, f1->size);
+                print_to_shell("Copied.", 0x00FF00);
+            }
+        }
+    } else if (strcmp(argv0, "stat") == 0) {
+        char* fname = strtok(NULL, " ");
+        if (!fname) { print_to_shell("Usage: stat <file>", 0xFFAAAA); }
+        else {
+            vfs_file_t* f = vfs_open(fname);
+            if (!f) print_to_shell("File not found.", 0xD0021B);
+            else {
+                char lbuf[128];
+                xsprintf(lbuf, "File: %s", f->name); print_to_shell(lbuf, 0xFFFFFF);
+                xsprintf(lbuf, "Size: %d bytes", (int)f->size); print_to_shell(lbuf, 0xFFFFFF);
+                xsprintf(lbuf, "Loc:  RAM Disk VFS"); print_to_shell(lbuf, 0xFFFFFF);
+            }
+        }
     } else if (strcmp(argv0, "fetch") == 0) {
         show_fastfetch();
     } else if (strcmp(argv0, "cd") == 0) {
@@ -333,10 +444,22 @@ void terminal_draw(void* self) {
     // Fill dark console background
     fb_rect(w->x + 6, w->y + 26, w->w - 12, w->h - 32, 0x111111);
     
-    uint32_t sy = w->y + 30;
-    int max_visible = (w->h - 60) / 12;
-    int start = history_count > max_visible ? history_count - max_visible : 0;
+    // Scroll handling
+    if (wm_get_active() == w && mouse_scroll_delta != 0) {
+        term_scroll_offset += mouse_scroll_delta * 3; // Scroll 3 lines per notch
+        mouse_scroll_delta = 0;
+    }
     
+    int max_visible = (w->h - 60) / 12;
+    int max_scroll = history_count > max_visible ? history_count - max_visible : 0;
+    
+    if (term_scroll_offset < 0) term_scroll_offset = 0;
+    if (term_scroll_offset > max_scroll) term_scroll_offset = max_scroll;
+    
+    int start = max_scroll - term_scroll_offset;
+    if (start < 0) start = 0;
+    
+    int sy = w->y + 30;
     for (int i = start; i < history_count; i++) {
         if (sy + 12 > w->y + w->h - 30) break;
         fb_print(term_history[i].text, w->x + 10, sy, term_history[i].color, 0x111111);
@@ -365,6 +488,74 @@ void terminal_handle_key(char c) {
         memset(cmd_buf, 0, MAX_CMD);
     } else if (c == '\b') {
         if (cmd_len > 0) cmd_buf[--cmd_len] = '\0';
+    } else if (c == '\t') {
+        // Tab completion logic
+        if (cmd_len > 0) {
+            cmd_buf[cmd_len] = '\0';
+            
+            // Find start of current word
+            int word_start = cmd_len - 1;
+            while (word_start >= 0 && cmd_buf[word_start] != ' ') word_start--;
+            word_start++;
+            
+            char* prefix = &cmd_buf[word_start];
+            int prefix_len = strlen(prefix);
+            
+            int is_first_word = (word_start == 0);
+            
+            const char* matches[32];
+            int match_count = 0;
+            
+            if (is_first_word) {
+                // Match apps and builtins
+                const char* builtins[] = {"help", "ls", "cat", "touch", "rm", "pci", "date", "mem", "ver", "clear", "fetch", "hexdump", "echo", "write", "wc", "cp", "stat", "exit", "cd"};
+                for (int i = 0; i < 19; i++) {
+                    if (strncmp(builtins[i], prefix, prefix_len) == 0) {
+                        if (match_count < 32) matches[match_count++] = builtins[i];
+                    }
+                }
+                for (uint32_t i = 0; i < app_get_count(); i++) {
+                    app_entry_t* a = app_get_by_index(i);
+                    if (a && strncmp(a->name, prefix, prefix_len) == 0) {
+                        if (match_count < 32) matches[match_count++] = a->name;
+                    }
+                }
+            } else {
+                // Match VFS files
+                for (int i = 0; i < 64; i++) {
+                    vfs_file_t* f = vfs_get_by_index(i);
+                    if (f && strncmp(f->name, prefix, prefix_len) == 0) {
+                        if (match_count < 32) matches[match_count++] = f->name;
+                    }
+                }
+            }
+            
+            if (match_count == 1) {
+                // Autocomplete
+                const char* completion = matches[0] + prefix_len;
+                while (*completion && cmd_len < MAX_CMD - 2) {
+                    cmd_buf[cmd_len++] = *completion++;
+                }
+                if (cmd_len < MAX_CMD - 1) cmd_buf[cmd_len++] = ' ';
+            } else if (match_count > 1) {
+                // Print matches
+                char full_cmd[128];
+                xsprintf(full_cmd, "root@onken:%s$ %s", current_dir, cmd_buf);
+                term_history_add(full_cmd, 0x888888);
+                
+                char line[128];
+                line[0] = '\0';
+                for (int i = 0; i < match_count; i++) {
+                    if (strlen(line) + strlen(matches[i]) + 2 >= 127) {
+                        print_to_shell(line, 0xFFFFFF);
+                        line[0] = '\0';
+                    }
+                    strncat(line, matches[i], 127);
+                    strncat(line, "  ", 127);
+                }
+                if (strlen(line) > 0) print_to_shell(line, 0xFFFFFF);
+            }
+        }
     } else if (c >= 32 && c < 127) {
         if (cmd_len < MAX_CMD - 1) cmd_buf[cmd_len++] = c;
     }

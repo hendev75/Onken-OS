@@ -2,6 +2,7 @@
 #include "../kernel.h"
 #include "../interrupts/idt.h"
 #include "../scheduler/scheduler.h"
+#include "../../drivers/sound.h"
 
 volatile uint64_t kernel_ticks = 0;
 volatile uint64_t idle_ticks = 0;
@@ -42,6 +43,9 @@ void irq0_handler(void* stack_frame) {
     
     // Process scheduler accounting
     scheduler_tick();
+    
+    // Process sound queue
+    sound_tick();
     
     // Send EOI to PIC
     pic_send_eoi(0);

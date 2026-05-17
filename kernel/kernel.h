@@ -20,6 +20,8 @@ typedef struct {
 
 void mm_init(void* memmap_req, void* hhdm_req);
 void* kmalloc(uint32_t size);
+void kfree(void* ptr);
+void* krealloc(void* ptr, uint32_t new_size);
 
 static inline void outb(uint16_t port, uint8_t val) {
     asm volatile ( "outb %0, %1" : : "a"(val), "Nd"(port) );

@@ -34,5 +34,7 @@ void wm_add_window(uint32_t x, uint32_t y, uint32_t w, uint32_t h, const char* t
 void wm_draw_all();
 void wm_handle_mouse(int mx, int my, int left_click);
 window_t* wm_get_active();
+window_t* wm_get_windows(uint32_t* count);
+void wm_focus_window(window_t* w);
 void draw_retro_3d_panel(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint8_t sunken);
 void wm_cycle_depth();

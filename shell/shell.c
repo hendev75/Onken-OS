@@ -176,23 +176,55 @@ static void draw_start_menu() {
     }
 }
 
-static void draw_task_switcher() {
-    uint32_t cx = (fb_width - 300) / 2;
-    uint32_t cy = (fb_height - 150) / 2;
+static void draw_alt_tab_switcher() {
+    uint32_t cx = (fb_width - 400) / 2;
+    uint32_t cy = (fb_height - 200) / 2;
     
     if (ui_theme == 1) {
-        draw_retro_3d_panel(cx, cy, 300, 150, 0);
-        fb_print("Task Switcher", cx + 90, cy + 20, 0x224488, 0xC0C0C0);
+        draw_retro_3d_panel(cx, cy, 400, 200, 0);
+        fb_print("Task Switcher", cx + 150, cy + 20, 0x224488, 0xC0C0C0);
     } else {
-        fb_rect(cx, cy, 300, 150, 0x222222);
-        fb_rect(cx+2, cy+2, 296, 146, 0x444444);
-        fb_print("Task Switcher", cx + 90, cy + 20, 0xFFFFFF, 0x444444);
+        fb_rect(cx, cy, 400, 200, 0x222222);
+        fb_rect(cx+2, cy+2, 396, 196, 0x444444);
+        fb_print("Task Switcher", cx + 150, cy + 20, 0xFFFFFF, 0x444444);
     }
     
-    window_t* active_w = wm_get_active();
-    if (active_w) {
-        fb_print("Active Window:", cx + 20, cy + 60, ui_theme == 1 ? 0x000000 : 0xFFFFFF, ui_theme == 1 ? 0xC0C0C0 : 0x444444);
-        fb_print(active_w->title, cx + 20, cy + 80, 0xD4A017, ui_theme == 1 ? 0xC0C0C0 : 0x444444);
+    uint32_t count = 0;
+    window_t* wins = wm_get_windows(&count);
+    
+    int open_count = 0;
+    for (uint32_t i = 0; i < count; i++) {
+        if (!wins[i].closed) open_count++;
+    }
+    
+    if (open_count == 0) {
+        fb_print("No Open Windows", cx + 130, cy + 90, ui_theme == 1 ? 0x000000 : 0xAAAAAA, ui_theme == 1 ? 0xC0C0C0 : 0x444444);
+        return;
+    }
+    
+    // Draw grid of thumbnails
+    int bx = cx + 20;
+    int by = cy + 50;
+    for (uint32_t i = 0; i < count; i++) {
+        if (!wins[i].closed) {
+            uint32_t bg = wins[i].active ? (ui_theme == 1 ? 0x224488 : 0x4A90E2) : (ui_theme == 1 ? 0xDFDFDF : 0x666666);
+            uint32_t fg = wins[i].active ? 0xFFFFFF : (ui_theme == 1 ? 0x000000 : 0xFFFFFF);
+            
+            if (ui_theme == 1) {
+                draw_retro_3d_panel(bx, by, 110, 60, wins[i].active);
+                fb_rect(bx + 4, by + 4, 102, 52, bg);
+            } else {
+                fb_rect(bx, by, 110, 60, bg);
+            }
+            
+            fb_print(wins[i].title, bx + 10, by + 26, fg, bg);
+            
+            bx += 120;
+            if (bx > cx + 300) {
+                bx = cx + 20;
+                by += 70;
+            }
+        }
     }
 }
 
@@ -249,10 +281,28 @@ void shell_loop(void) {
     uint8_t last_mbl = 0, last_mbr = 0;
 
     while(1) {
+        // Super Key start menu toggle
+        static int last_super = 0;
+        int current_super = ps2_is_super_pressed();
+        if (current_super && !last_super) {
+            start_menu_visible = !start_menu_visible;
+            full_redraw = 1;
+        }
+        last_super = current_super;
+
         // Alt-Tab Task Switcher
-        if (ps2_is_alt_pressed()) {
+        static int last_alt = 0;
+        int current_alt = ps2_is_alt_pressed();
+        if (current_alt) {
             if (!task_switcher_visible) {
                 task_switcher_visible = 1;
+                full_redraw = 1;
+            }
+            if (ps2_get_last_key() == '\t') {
+                // Next time we handle keys, wm_cycle_depth?
+                // For now, wm_cycle_depth works well for Alt+Tab
+                extern void wm_cycle_depth(void);
+                wm_cycle_depth();
                 full_redraw = 1;
             }
         } else {
@@ -261,6 +311,7 @@ void shell_loop(void) {
                 full_redraw = 1;
             }
         }
+        last_alt = current_alt;
 
         // Change tracking
         if (mouse_b_left != last_mbl || mouse_b_right != last_mbr || mouse_b_left || mouse_b_right) {
@@ -325,16 +376,16 @@ void shell_loop(void) {
                 if (mouse_x >= menu_x && mouse_x <= menu_x + 150 &&
                     mouse_y >= menu_y && mouse_y <= menu_y + 80) {
                     int click_offset_y = mouse_y - menu_y;
-                    if (click_offset_y >= 5 && click_offset_y <= 28) {
+                    if (click_offset_y < 27) {
                         // Refresh
                         full_redraw = 1;
-                    } else if (click_offset_y >= 29 && click_offset_y <= 52) {
+                    } else if (click_offset_y < 54) {
                         // Wallpaper toggle
                         extern int wallpaper_mode;
                         wallpaper_mode = (wallpaper_mode == 1) ? 0 : 1;
                         fb_render_wallpaper();
                         full_redraw = 1;
-                    } else if (click_offset_y >= 53 && click_offset_y <= 75) {
+                    } else {
                         // Settings
                         app_entry_t* app = app_find("settings");
                         if (app) app->launch(0);
@@ -342,6 +393,7 @@ void shell_loop(void) {
                 }
                 menu_visible = 0;
                 full_redraw = 1;
+                goto end_click_processing;
             }
             
             // Desktop icon single-click launcher (reliable under QEMU)
@@ -390,20 +442,57 @@ void shell_loop(void) {
                         }
                         start_menu_visible = 0;
                         full_redraw = 1;
+                    } else if (mouse_y >= (int32_t)fb_height - 38 && mouse_y <= (int32_t)fb_height - 8) {
+                        uint32_t w_count = 0;
+                        window_t* wins = wm_get_windows(&w_count);
+                        int tb_x = 120;
+                        for (uint32_t i = 0; i < w_count; i++) {
+                            if (!wins[i].closed) {
+                                if (mouse_x >= tb_x && mouse_x <= tb_x + 140) {
+                                    if (wins[i].minimized) wins[i].minimized = 0;
+                                    extern void wm_focus_window(window_t*);
+                                    wm_focus_window(&wins[i]);
+                                    full_redraw = 1;
+                                    break;
+                                }
+                                tb_x += 145;
+                            }
+                        }
                     }
                     
-                    // Appearance Settings dynamic click handler
+                    // Settings dynamic click handler
                     window_t* active_w = wm_get_active();
                     if (active_w && !active_w->closed && strcmp(active_w->title, "Settings") == 0) {
-                        if (mouse_x >= (int)active_w->x + 20 && mouse_x <= (int)active_w->x + 220) {
-                            if (mouse_y >= (int)active_w->y + 70 && mouse_y <= (int)active_w->y + 100) {
-                                ui_theme = 1; fb_render_wallpaper(); full_redraw = 1;
-                            } else if (mouse_y >= (int)active_w->y + 110 && mouse_y <= (int)active_w->y + 140) {
-                                ui_theme = 0; fb_render_wallpaper(); full_redraw = 1;
-                            } else if (mouse_y >= (int)active_w->y + 190 && mouse_y <= (int)active_w->y + 220) {
-                                wallpaper_mode = 1; fb_render_wallpaper(); full_redraw = 1;
-                            } else if (mouse_y >= (int)active_w->y + 230 && mouse_y <= (int)active_w->y + 260) {
-                                wallpaper_mode = 0; fb_render_wallpaper(); full_redraw = 1;
+                        extern int current_tab;
+                        // Check tab clicks
+                        if (mouse_y >= (int)active_w->y + 30 && mouse_y <= (int)active_w->y + 55) {
+                            if (mouse_x >= (int)active_w->x + 10 && mouse_x <= (int)active_w->x + 110) {
+                                current_tab = 0; full_redraw = 1;
+                            } else if (mouse_x >= (int)active_w->x + 115 && mouse_x <= (int)active_w->x + 215) {
+                                current_tab = 1; full_redraw = 1;
+                            } else if (mouse_x >= (int)active_w->x + 220 && mouse_x <= (int)active_w->x + 320) {
+                                current_tab = 2; full_redraw = 1;
+                            }
+                        }
+                        
+                        if (current_tab == 0) {
+                            if (mouse_x >= (int)active_w->x + 20 && mouse_x <= (int)active_w->x + 200) {
+                                if (mouse_y >= (int)active_w->y + 90 && mouse_y <= (int)active_w->y + 120) {
+                                    ui_theme = 1; fb_render_wallpaper(); full_redraw = 1;
+                                } else if (mouse_y >= (int)active_w->y + 130 && mouse_y <= (int)active_w->y + 160) {
+                                    ui_theme = 0; fb_render_wallpaper(); full_redraw = 1;
+                                } else if (mouse_y >= (int)active_w->y + 200 && mouse_y <= (int)active_w->y + 230) {
+                                    wallpaper_mode = 1; fb_render_wallpaper(); full_redraw = 1;
+                                } else if (mouse_y >= (int)active_w->y + 240 && mouse_y <= (int)active_w->y + 270) {
+                                    wallpaper_mode = 0; fb_render_wallpaper(); full_redraw = 1;
+                                }
+                            }
+                        } else if (current_tab == 2) {
+                            if (mouse_x >= (int)active_w->x + 20 && mouse_x <= (int)active_w->x + 200) {
+                                if (mouse_y >= (int)active_w->y + 160 && mouse_y <= (int)active_w->y + 190) {
+                                    sound_enqueue(1000, 200);
+                                    full_redraw = 1;
+                                }
                             }
                         }
                     }
@@ -415,28 +504,24 @@ void shell_loop(void) {
                                 // Play Chiptune!
                                 player_selected_btn = 0;
                                 full_redraw = 1;
-                                sound_play(261); // C4
-                                volatile int d = 5000000; while(d--);
-                                sound_play(329); // E4
-                                d = 5000000; while(d--);
-                                sound_play(392); // G4
-                                d = 5000000; while(d--);
-                                sound_play(523); // C5
-                                d = 8000000; while(d--);
-                                sound_stop();
+                                sound_enqueue(261, 150); // C4
+                                sound_enqueue(0, 50);    // Rest
+                                sound_enqueue(329, 150); // E4
+                                sound_enqueue(0, 50);
+                                sound_enqueue(392, 150); // G4
+                                sound_enqueue(0, 50);
+                                sound_enqueue(523, 300); // C5
                             } else if (mouse_x >= (int)active_w->x + 220 && mouse_x <= (int)active_w->x + 400) {
                                 // Success Alert!
                                 player_selected_btn = 1;
                                 full_redraw = 1;
-                                sound_play(523); // C5
-                                volatile int d = 3000000; while(d--);
-                                sound_play(659); // E5
-                                d = 3000000; while(d--);
-                                sound_play(784); // G5
-                                d = 3000000; while(d--);
-                                sound_play(1046); // C6
-                                d = 6000000; while(d--);
-                                sound_stop();
+                                sound_enqueue(523, 100); // C5
+                                sound_enqueue(0, 20);
+                                sound_enqueue(659, 100); // E5
+                                sound_enqueue(0, 20);
+                                sound_enqueue(784, 100); // G5
+                                sound_enqueue(0, 20);
+                                sound_enqueue(1046, 250); // C6
                             }
                         } else if (mouse_y >= (int)active_w->y + 120 && mouse_y <= (int)active_w->y + 150) {
                             if (mouse_x >= (int)active_w->x + 20 && mouse_x <= (int)active_w->x + 400) {
@@ -477,6 +562,7 @@ void shell_loop(void) {
                     }
                 }
             }
+end_click_processing:;
         }
 
         if (mouse_b_right && mouse_b_right != last_mbr) {
@@ -528,13 +614,41 @@ void shell_loop(void) {
                 }
             } else {
                 if (ui_theme == 1) {
-                    draw_retro_3d_panel(10, fb_height - 38, 100, 30, 0); // Raised normal
+                    draw_retro_3d_panel(10, fb_height - 38, 100, 30, start_menu_visible); // Raised normal, sunken if open
                 } else {
-                    fb_rect(10, fb_height - 38, 100, 30, 0x2C3E50);
+                    fb_rect(10, fb_height - 38, 100, 30, start_menu_visible ? 0x4A90E2 : 0x2C3E50);
                 }
             }
             
             fb_print("START", 35, fb_height - 28, ui_theme == 1 ? 0x000000 : 0xFFFFFF, ui_theme == 1 ? 0xC0C0C0 : (mouse_x >= 10 && mouse_x <= 110 && mouse_y >= (int32_t)fb_height - 38 && mouse_y <= (int32_t)fb_height - 8 ? 0x4A90E2 : 0x2C3E50));
+            
+            // Taskbar App Buttons
+            uint32_t w_count = 0;
+            window_t* wins = wm_get_windows(&w_count);
+            int tb_x = 120;
+            for (uint32_t i = 0; i < w_count; i++) {
+                if (!wins[i].closed) {
+                    int is_sunken = wins[i].minimized || wins[i].active;
+                    if (ui_theme == 1) {
+                        draw_retro_3d_panel(tb_x, fb_height - 38, 140, 30, is_sunken);
+                    } else {
+                        fb_rect(tb_x, fb_height - 38, 140, 30, is_sunken ? 0x333333 : 0x222222);
+                    }
+                    
+                    char short_title[16];
+                    strncpy(short_title, wins[i].title, 15);
+                    short_title[15] = '\0';
+                    if (strlen(wins[i].title) > 15) {
+                        short_title[12] = '.'; short_title[13] = '.'; short_title[14] = '.';
+                    }
+                    
+                    fb_print(short_title, tb_x + 10, fb_height - 28, ui_theme == 1 ? 0x000000 : 0xFFFFFF, ui_theme == 1 ? 0xC0C0C0 : (is_sunken ? 0x333333 : 0x222222));
+                    
+                    // Taskbar button click check (since this happens every frame, checking mouse release is tricky. Let's do it in the mouse event handler above... Oh wait, doing it here inside the redraw loop is late. Let's do it in the mouse click check loop earlier.)
+                    tb_x += 145;
+                }
+            }
+
             // Real-time clock from CMOS RTC
             {
                 char time_str[8];
@@ -544,7 +658,7 @@ void shell_loop(void) {
 
             if (menu_visible) draw_context_menu(menu_x, menu_y);
             if (start_menu_visible) draw_start_menu();
-            if (task_switcher_visible) draw_task_switcher();
+            if (task_switcher_visible) draw_alt_tab_switcher();
 
             // Cache desktop surface before cursor
             fb_commit_desktop();

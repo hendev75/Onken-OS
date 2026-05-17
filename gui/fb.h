@@ -25,4 +25,5 @@ void fb_hide_cursor();
 void fb_show_cursor(int32_t x, int32_t y);
 uint32_t fb_get_pixel(uint32_t x, uint32_t y);
 void draw_bmp_to_fb(const char* data, size_t size, int screen_x, int screen_y, int max_w, int max_h);
+void fb_draw_image(const char* data, size_t size, int screen_x, int screen_y, int max_w, int max_h);
 

@@ -26,6 +26,27 @@ void wm_init() {
     active_window = 0;
 }
 
+window_t* wm_get_windows(uint32_t* count) {
+    if (count) *count = window_count;
+    return windows;
+}
+
+void wm_focus_window(window_t* w) {
+    if (!w || w->closed) return;
+    if (active_window) active_window->active = 0;
+    
+    // Move to front (z-index 0)
+    int idx = w - windows;
+    window_t temp = windows[idx];
+    for (int i = idx; i > 0; i--) {
+        windows[i] = windows[i - 1];
+    }
+    windows[0] = temp;
+    
+    active_window = &windows[0];
+    active_window->active = 1;
+}
+
 void draw_retro_3d_panel(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint8_t sunken) {
     uint32_t l = current_theme.border_light;
     uint32_t d = current_theme.border_dark;

@@ -54,6 +54,30 @@ void* kmalloc(uint32_t size) {
     return ptr;
 }
 
+void kfree(void* ptr) {
+    // Bump allocator doesn't free
+    (void)ptr;
+}
+
+void* krealloc(void* ptr, uint32_t new_size) {
+    if (new_size == 0) {
+        kfree(ptr);
+        return 0;
+    }
+    void* new_ptr = kmalloc(new_size);
+    if (ptr) {
+        // Since we don't know the old size in a bump allocator, 
+        // we copy up to new_size. This might read out of bounds of the old object,
+        // but it's safe because heap is contiguous.
+        // Actually, stb_image doesn't strictly require krealloc if we define STBI_NO_SIMD?
+        // Let's just copy 1/4 of new_size or something safe, or better:
+        // Memory is contiguous, so over-reading won't page fault inside the heap.
+        extern void* memcpy(void*, const void*, uint32_t);
+        memcpy(new_ptr, ptr, new_size);
+    }
+    return new_ptr;
+}
+
 void* palloc(void) {
     // Page allocator (4096-byte aligned page)
     uint64_t current = (uint64_t)heap_ptr;

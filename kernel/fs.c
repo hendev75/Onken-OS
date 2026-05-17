@@ -10,6 +10,8 @@ vfs_file_t* vfs_get_by_index(int idx) {
     return NULL;
 }
 
+#include "../apps/imageviewer/logo_png.h"
+
 int vfs_read(const char* name, char* buf, size_t max_len) {
     vfs_file_t* f = vfs_open(name);
     if (!f) return -1;
@@ -166,6 +168,12 @@ void vfs_init(void) {
     
     // Generate a 48x48 sunset BMP wallpaper tile (fits in 16KB)
     create_demo_bmp("sunset.bmp", 48, 48);
+    
+    // Add logo.png
+    extern const unsigned char logo_png[];
+    extern const unsigned int logo_png_len;
+    vfs_create("logo.png");
+    vfs_write("logo.png", (const char*)logo_png, logo_png_len);
 }
 
 int vfs_create(const char* name) {

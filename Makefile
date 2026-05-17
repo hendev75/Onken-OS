@@ -2,7 +2,7 @@ CC = gcc
 LD = ld
 AS = nasm
 
-CFLAGS = -m64 -ffreestanding -O2 -Wall -Wextra -fno-stack-protector -fno-stack-check -mno-red-zone -mno-sse -mno-mmx -mno-avx
+CFLAGS = -m64 -ffreestanding -O2 -Wall -Wextra -fno-stack-protector -fno-stack-check -mno-red-zone -mno-sse -mno-mmx -mno-avx -fno-builtin -U_FORTIFY_SOURCE
 ASFLAGS = -f elf64
 LDFLAGS = -m elf_x86_64 -nostdlib -static -z text -z max-page-size=0x1000 -T linker.ld
 
@@ -31,6 +31,8 @@ OBJ = boot/boot.o \
       drivers/sound.o \
       drivers/rtc.o \
       drivers/pci.o \
+      drivers/cpuid.o \
+      gui/stb_image.o \
       apps/player/player.o \
       apps/imageviewer/imageviewer.o
 TARGET = oneko.bin
