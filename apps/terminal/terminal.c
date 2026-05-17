@@ -4,6 +4,7 @@
 #include "../../gui/fb.h"
 #include "../../gui/window.h"
 #include "../../kernel/string.h"
+#include "../../kernel/fs.h"
 
 #define MAX_CMD 128
 static char cmd_buf[MAX_CMD];
@@ -103,11 +104,23 @@ static void exec_command(window_t* w, const char* cmd) {
         print_to_shell("  clear - Clear screen", 0xFFFFFF);
         print_to_shell("  exit  - Close terminal", 0xFFFFFF);
     } else if (strcmp(argv0, "ls") == 0) {
-        if (strcmp(current_dir, "/") == 0) {
-            print_to_shell("boot/     drivers/  gui/      kernel/", 0x4A90E2);
-            print_to_shell("shell/    Makefile  readme    onken.bin", 0xFFFFFF);
-        } else {
-            print_to_shell("file1.txt  file2.txt", 0xFFFFFF);
+        print_to_shell("Directories:", 0x0055AA);
+        print_to_shell("  system/    apps/      assets/", 0x50E3C2);
+        print_to_shell("Files (RAM Disk VFS):", 0xF5A623);
+        
+        extern vfs_file_t* vfs_get_by_index(int idx);
+        int found = 0;
+        for (int i = 0; i < 64; i++) {
+            vfs_file_t* f = vfs_get_by_index(i);
+            if (f) {
+                char tmp[64];
+                xsprintf(tmp, "  %-12s  %d bytes", f->name, (uint32_t)f->size);
+                print_to_shell(tmp, 0xFFFFFF);
+                found = 1;
+            }
+        }
+        if (!found) {
+            print_to_shell("  (empty)", 0x888888);
         }
     } else if (strcmp(argv0, "cd") == 0) {
         char* arg1 = strtok(NULL, " ");

@@ -27,7 +27,10 @@ OBJ = boot/boot.o \
       apps/browser/browser.o \
       apps/files/files.o \
       apps/settings/settings.o \
-      apps/terminal/terminal.o
+      apps/terminal/terminal.o \
+      drivers/sound.o \
+      apps/player/player.o \
+      apps/imageviewer/imageviewer.o
 TARGET = oneko.bin
 ISO = oneko.iso
 

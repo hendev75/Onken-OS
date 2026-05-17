@@ -150,8 +150,53 @@ void fb_gradient(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t c1, ui
     }
 }
 
+#include "../kernel/fs.h"
+
+void draw_bmp_to_fb(const char* data, size_t size, int screen_x, int screen_y, int max_w, int max_h) {
+    if (size < 54) return;
+    if (data[0] != 'B' || data[1] != 'M') return;
+    
+    int w, h;
+    // Safely copy width and height from header offsets (avoid unaligned access crash)
+    w = *(const int32_t*)(data + 18);
+    h = *(const int32_t*)(data + 22);
+    uint16_t bpp = *(const uint16_t*)(data + 28);
+    uint32_t offset = *(const uint32_t*)(data + 10);
+    
+    if (bpp != 24) return; // Support standard 24bpp uncompressed
+    
+    size_t data_idx = offset;
+    for (int y = h - 1; y >= 0; y--) {
+        for (int x = 0; x < w; x++) {
+            if (data_idx + 3 > size) break;
+            uint8_t b = data[data_idx++];
+            uint8_t g = data[data_idx++];
+            uint8_t r = data[data_idx++];
+            
+            uint32_t color = (r << 16) | (g << 8) | b;
+            
+            if (x < max_w && (h - 1 - y) < max_h) {
+                fb_plot(screen_x + x, screen_y + (h - 1 - y), color);
+            }
+        }
+    }
+}
+
 void fb_wallpaper() {
-    fb_gradient(0, 0, fb_width, fb_height, 0x1a2a6c, 0x0a0a0a);
+    vfs_file_t* f = vfs_open("sunset.bmp");
+    if (f) {
+        int w = *(const int32_t*)(f->data + 18);
+        int h = *(const int32_t*)(f->data + 22);
+        if (w <= 0 || h <= 0) { w = 64; h = 64; }
+        
+        for (uint32_t ty = 0; ty < fb_height; ty += h) {
+            for (uint32_t tx = 0; tx < fb_width; tx += w) {
+                draw_bmp_to_fb(f->data, f->size, tx, ty, w, h);
+            }
+        }
+    } else {
+        fb_gradient(0, 0, fb_width, fb_height, 0x1a2a6c, 0x0a0a0a);
+    }
 }
 
 void fb_plot(uint32_t x, uint32_t y, uint32_t color) {

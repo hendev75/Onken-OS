@@ -4,6 +4,7 @@
 #include "../kernel/string.h"
 #include "../kernel/fs.h"
 #include "../gui/window.h"
+#include "../drivers/sound.h"
 
 // Dynamic App and Subsystem Headers
 #include "../kernel/tasking/app.h"
@@ -18,6 +19,10 @@
 #include "../apps/files/files.h"
 #include "../apps/settings/settings.h"
 #include "../apps/terminal/terminal.h"
+#include "../apps/player/player.h"
+#include "../apps/imageviewer/imageviewer.h"
+
+extern int player_selected_btn;
 
 int ui_theme = 1; // 1 = Retro (Workbench), 0 = Modern
 int wallpaper_mode = 1; // 1 = Teal Solid, 0 = Space Gradient
@@ -103,55 +108,71 @@ static void draw_start_menu() {
     uint32_t text_col = 0xFFFFFF;
     
     if (ui_theme == 1) {
-        draw_retro_3d_panel(10, fb_height - 350, 200, 300, 0);
+        draw_retro_3d_panel(10, fb_height - 400, 200, 350, 0);
     } else {
-        fb_rect(10, fb_height - 350, 200, 300, 0x222222);
-        fb_rect(11, fb_height - 349, 198, 298, bg);
+        fb_rect(10, fb_height - 400, 200, 350, 0x222222);
+        fb_rect(11, fb_height - 399, 198, 348, bg);
     }
     
-    fb_print("Onken OS AROS", 20, fb_height - 330, ui_theme == 1 ? 0x224488 : 0xF5A623, bg);
-    fb_rect(20, fb_height - 310, 180, 2, 0x7F8C8D);
+    fb_print("Onken OS AROS", 20, fb_height - 380, ui_theme == 1 ? 0x224488 : 0xF5A623, bg);
+    fb_rect(20, fb_height - 360, 180, 2, 0x7F8C8D);
     
     // Programs
-    if (mouse_x >= 10 && mouse_x <= 210 && mouse_y >= (int32_t)fb_height - 290 && mouse_y <= (int32_t)fb_height - 270) {
-        fb_rect(15, fb_height - 295, 190, 25, hover_bg);
-        fb_print("Programs", 25, fb_height - 290, text_col, hover_bg);
+    if (mouse_x >= 10 && mouse_x <= 210 && mouse_y >= (int32_t)fb_height - 345 && mouse_y <= (int32_t)fb_height - 320) {
+        fb_rect(15, fb_height - 348, 190, 25, hover_bg);
+        fb_print("Programs", 25, fb_height - 343, text_col, hover_bg);
     } else {
-        fb_print("Programs", 25, fb_height - 290, ui_theme == 1 ? 0x000000 : text_col, bg);
+        fb_print("Programs", 25, fb_height - 343, ui_theme == 1 ? 0x000000 : text_col, bg);
     }
-
+ 
     // System Info
-    if (mouse_x >= 10 && mouse_x <= 210 && mouse_y >= (int32_t)fb_height - 250 && mouse_y <= (int32_t)fb_height - 230) {
-        fb_rect(15, fb_height - 255, 190, 25, hover_bg);
-        fb_print("System Info", 25, fb_height - 250, text_col, hover_bg);
+    if (mouse_x >= 10 && mouse_x <= 210 && mouse_y >= (int32_t)fb_height - 305 && mouse_y <= (int32_t)fb_height - 280) {
+        fb_rect(15, fb_height - 308, 190, 25, hover_bg);
+        fb_print("System Info", 25, fb_height - 303, text_col, hover_bg);
     } else {
-        fb_print("System Info", 25, fb_height - 250, ui_theme == 1 ? 0x000000 : text_col, bg);
+        fb_print("System Info", 25, fb_height - 303, ui_theme == 1 ? 0x000000 : text_col, bg);
     }
-
+ 
     // Filesystem
-    if (mouse_x >= 10 && mouse_x <= 210 && mouse_y >= (int32_t)fb_height - 210 && mouse_y <= (int32_t)fb_height - 190) {
-        fb_rect(15, fb_height - 215, 190, 25, hover_bg);
-        fb_print("Filesystem", 25, fb_height - 210, text_col, hover_bg);
+    if (mouse_x >= 10 && mouse_x <= 210 && mouse_y >= (int32_t)fb_height - 265 && mouse_y <= (int32_t)fb_height - 240) {
+        fb_rect(15, fb_height - 268, 190, 25, hover_bg);
+        fb_print("Filesystem", 25, fb_height - 263, text_col, hover_bg);
     } else {
-        fb_print("Filesystem", 25, fb_height - 210, ui_theme == 1 ? 0x000000 : text_col, bg);
+        fb_print("Filesystem", 25, fb_height - 263, ui_theme == 1 ? 0x000000 : text_col, bg);
     }
-
+ 
     // Settings
-    if (mouse_x >= 10 && mouse_x <= 210 && mouse_y >= (int32_t)fb_height - 170 && mouse_y <= (int32_t)fb_height - 150) {
-        fb_rect(15, fb_height - 175, 190, 25, hover_bg);
-        fb_print("Settings", 25, fb_height - 170, text_col, hover_bg);
+    if (mouse_x >= 10 && mouse_x <= 210 && mouse_y >= (int32_t)fb_height - 225 && mouse_y <= (int32_t)fb_height - 200) {
+        fb_rect(15, fb_height - 228, 190, 25, hover_bg);
+        fb_print("Settings", 25, fb_height - 223, text_col, hover_bg);
     } else {
-        fb_print("Settings", 25, fb_height - 170, ui_theme == 1 ? 0x000000 : text_col, bg);
+        fb_print("Settings", 25, fb_height - 223, ui_theme == 1 ? 0x000000 : text_col, bg);
+    }
+ 
+    // Sound Player
+    if (mouse_x >= 10 && mouse_x <= 210 && mouse_y >= (int32_t)fb_height - 185 && mouse_y <= (int32_t)fb_height - 160) {
+        fb_rect(15, fb_height - 188, 190, 25, hover_bg);
+        fb_print("Sound Player", 25, fb_height - 183, text_col, hover_bg);
+    } else {
+        fb_print("Sound Player", 25, fb_height - 183, ui_theme == 1 ? 0x000000 : text_col, bg);
+    }
+ 
+    // Image Viewer
+    if (mouse_x >= 10 && mouse_x <= 210 && mouse_y >= (int32_t)fb_height - 145 && mouse_y <= (int32_t)fb_height - 120) {
+        fb_rect(15, fb_height - 148, 190, 25, hover_bg);
+        fb_print("Image Viewer", 25, fb_height - 143, text_col, hover_bg);
+    } else {
+        fb_print("Image Viewer", 25, fb_height - 143, ui_theme == 1 ? 0x000000 : text_col, bg);
     }
     
     fb_rect(20, fb_height - 110, 180, 2, 0x7F8C8D);
     
     // Power Off
-    if (mouse_x >= 10 && mouse_x <= 210 && mouse_y >= (int32_t)fb_height - 90 && mouse_y <= (int32_t)fb_height - 70) {
-        fb_rect(15, fb_height - 95, 190, 25, 0xBB3333);
-        fb_print("Power Off", 25, fb_height - 90, text_col, 0xBB3333);
+    if (mouse_x >= 10 && mouse_x <= 210 && mouse_y >= (int32_t)fb_height - 95 && mouse_y <= (int32_t)fb_height - 70) {
+        fb_rect(15, fb_height - 98, 190, 25, 0xBB3333);
+        fb_print("Power Off", 25, fb_height - 93, text_col, 0xBB3333);
     } else {
-        fb_print("Power Off", 25, fb_height - 90, 0xBB3333, bg);
+        fb_print("Power Off", 25, fb_height - 93, 0xBB3333, bg);
     }
 }
 
@@ -216,6 +237,8 @@ void shell_loop(void) {
     files_init();
     settings_init();
     terminal_init();
+    player_init();
+    imageviewer_init();
     
     // Launch terminal app as standard boot window
     app_entry_t* term = app_find("terminal");
@@ -346,20 +369,26 @@ void shell_loop(void) {
                     start_menu_visible = !start_menu_visible;
                     full_redraw = 1;
                 } else {
-                    if (start_menu_visible && mouse_x >= 10 && mouse_x <= 210 && mouse_y >= (int32_t)fb_height - 350 && mouse_y <= (int32_t)fb_height - 50) {
-                        if (mouse_y >= (int32_t)fb_height - 290 && mouse_y <= (int32_t)fb_height - 270) { 
+                    if (start_menu_visible && mouse_x >= 10 && mouse_x <= 210 && mouse_y >= (int32_t)fb_height - 400 && mouse_y <= (int32_t)fb_height - 50) {
+                        if (mouse_y >= (int32_t)fb_height - 348 && mouse_y <= (int32_t)fb_height - 320) { 
                             app_entry_t* app = app_find("browser");
                             if (app) app->launch(0);
-                        } else if (mouse_y >= (int32_t)fb_height - 250 && mouse_y <= (int32_t)fb_height - 230) {
+                        } else if (mouse_y >= (int32_t)fb_height - 308 && mouse_y <= (int32_t)fb_height - 280) {
                             app_entry_t* app = app_find("sysinfo");
                             if (app) app->launch(0);
-                        } else if (mouse_y >= (int32_t)fb_height - 210 && mouse_y <= (int32_t)fb_height - 190) { 
+                        } else if (mouse_y >= (int32_t)fb_height - 268 && mouse_y <= (int32_t)fb_height - 240) { 
                             app_entry_t* app = app_find("files");
                             if (app) app->launch(0);
-                        } else if (mouse_y >= (int32_t)fb_height - 170 && mouse_y <= (int32_t)fb_height - 150) { 
+                        } else if (mouse_y >= (int32_t)fb_height - 228 && mouse_y <= (int32_t)fb_height - 200) { 
                             app_entry_t* app = app_find("settings");
                             if (app) app->launch(0);
-                        } else if (mouse_y >= (int32_t)fb_height - 90 && mouse_y <= (int32_t)fb_height - 70) {
+                        } else if (mouse_y >= (int32_t)fb_height - 188 && mouse_y <= (int32_t)fb_height - 160) {
+                            app_entry_t* app = app_find("player");
+                            if (app) app->launch(0);
+                        } else if (mouse_y >= (int32_t)fb_height - 148 && mouse_y <= (int32_t)fb_height - 120) {
+                            app_entry_t* app = app_find("imageviewer");
+                            if (app) app->launch(0);
+                        } else if (mouse_y >= (int32_t)fb_height - 98 && mouse_y <= (int32_t)fb_height - 70) {
                             outw(0x604, 0x2000); // QEMU ACPI shutdown
                             outw(0xB004, 0x2000); // Bochs shutdown fallback
                         }
@@ -379,6 +408,69 @@ void shell_loop(void) {
                                 wallpaper_mode = 1; fb_render_wallpaper(); full_redraw = 1;
                             } else if (mouse_y >= (int)active_w->y + 230 && mouse_y <= (int)active_w->y + 260) {
                                 wallpaper_mode = 0; fb_render_wallpaper(); full_redraw = 1;
+                            }
+                        }
+                    }
+                    
+                    // Sound Player dynamic click handler
+                    if (active_w && !active_w->closed && strcmp(active_w->title, "Sound Player") == 0) {
+                        if (mouse_y >= (int)active_w->y + 70 && mouse_y <= (int)active_w->y + 100) {
+                            if (mouse_x >= (int)active_w->x + 20 && mouse_x <= (int)active_w->x + 200) {
+                                // Play Chiptune!
+                                player_selected_btn = 0;
+                                full_redraw = 1;
+                                sound_play(261); // C4
+                                volatile int d = 5000000; while(d--);
+                                sound_play(329); // E4
+                                d = 5000000; while(d--);
+                                sound_play(392); // G4
+                                d = 5000000; while(d--);
+                                sound_play(523); // C5
+                                d = 8000000; while(d--);
+                                sound_stop();
+                            } else if (mouse_x >= (int)active_w->x + 220 && mouse_x <= (int)active_w->x + 400) {
+                                // Success Alert!
+                                player_selected_btn = 1;
+                                full_redraw = 1;
+                                sound_play(523); // C5
+                                volatile int d = 3000000; while(d--);
+                                sound_play(659); // E5
+                                d = 3000000; while(d--);
+                                sound_play(784); // G5
+                                d = 3000000; while(d--);
+                                sound_play(1046); // C6
+                                d = 6000000; while(d--);
+                                sound_stop();
+                            }
+                        } else if (mouse_y >= (int)active_w->y + 120 && mouse_y <= (int)active_w->y + 150) {
+                            if (mouse_x >= (int)active_w->x + 20 && mouse_x <= (int)active_w->x + 400) {
+                                // Mute
+                                player_selected_btn = 2;
+                                full_redraw = 1;
+                                sound_stop();
+                            }
+                        }
+                    }
+
+                    // File Explorer dynamic double-click/click handler
+                    if (active_w && !active_w->closed && strcmp(active_w->title, "File Explorer") == 0) {
+                        if (mouse_x >= (int)active_w->x + 260 && mouse_x <= (int)active_w->x + 580) {
+                            int file_idx = (mouse_y - ((int)active_w->y + 90)) / 20;
+                            if (file_idx >= 0 && file_idx < 64) {
+                                extern vfs_file_t* vfs_get_by_index(int idx);
+                                vfs_file_t* f = vfs_get_by_index(file_idx);
+                                if (f) {
+                                    // Check extension
+                                    int flen = strlen(f->name);
+                                    if (flen >= 4 && strcmp(f->name + flen - 4, ".bmp") == 0) {
+                                        app_entry_t* app = app_find("imageviewer");
+                                        if (app) app->launch(f->name);
+                                    } else {
+                                        app_entry_t* app = app_find("yano");
+                                        if (app) app->launch(f->name);
+                                    }
+                                    full_redraw = 1;
+                                }
                             }
                         }
                     }
