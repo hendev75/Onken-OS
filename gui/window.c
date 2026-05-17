@@ -181,12 +181,16 @@ void wm_handle_mouse(int mx, int my, int left_click) {
     // 1. Check active window first
     if (active_window && !active_window->closed) {
         window_t* w = active_window;
-        if (mx >= (int)w->x && mx <= (int)(w->x + w->w) &&
-            my >= (int)w->y && my <= (int)(w->y + 24)) {
+        int wx = (int)w->x;
+        int wy = (int)w->y;
+        int ww = (int)w->w;
+        
+        if (mx >= wx && mx <= wx + ww &&
+            my >= wy && my <= wy + 24) {
             
             // Check Close Box
-            if (mx >= (int)w->x + 6 && mx <= (int)w->x + 20 &&
-                my >= (int)w->y + 6 && my <= (int)w->y + 20) {
+            if (mx >= wx + 6 && mx <= wx + 20 &&
+                my >= wy + 6 && my <= wy + 20) {
                 w->closed = 1;
                 active_window = 0;
                 // Switch to next active window
@@ -201,23 +205,23 @@ void wm_handle_mouse(int mx, int my, int left_click) {
             }
             
             // Check Depth Gadget (toggles back)
-            if (mx >= (int)w->x + w->w - 20 && mx <= (int)w->x + w->w - 6 &&
-                my >= (int)w->y + 6 && my <= (int)w->y + 20) {
+            if (mx >= wx + ww - 20 && mx <= wx + ww - 6 &&
+                my >= wy + 6 && my <= wy + 20) {
                 wm_cycle_depth();
                 return;
             }
             
             // Check Minimize Box (shaded)
-            if (mx >= (int)w->x + w->w - 38 && mx <= (int)w->x + w->w - 24 &&
-                my >= (int)w->y + 6 && my <= (int)w->y + 20) {
+            if (mx >= wx + ww - 38 && mx <= wx + ww - 24 &&
+                my >= wy + 6 && my <= wy + 20) {
                 w->minimized = !w->minimized;
                 return;
             }
             
             // Drag titlebar
             dragging_window_idx = active_window - windows;
-            drag_off_x = mx - w->x;
-            drag_off_y = my - w->y;
+            drag_off_x = mx - wx;
+            drag_off_y = my - wy;
             return;
         }
     }

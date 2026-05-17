@@ -215,6 +215,10 @@ static uint32_t cursor_backup[32 * 32];
 static int32_t backup_x = -1, backup_y = -1;
 static uint32_t backup_w = 0, backup_h = 0;
 
+void fb_reset_cursor_backup() {
+    backup_x = -1;
+}
+
 void fb_hide_cursor() {
     if (backup_x == -1) return;
     for (uint32_t y = 0; y < backup_h; y++) {

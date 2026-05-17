@@ -131,6 +131,10 @@ static void exec_command(window_t* w, const char* cmd) {
 
 void terminal_draw(void* self) {
     window_t* w = (window_t*)self;
+    
+    // Fill the inner sunken panel with a solid dark grey console background
+    fb_rect(w->x + 6, w->y + 26, w->w - 12, w->h - 32, 0x111111);
+    
     uint32_t sy = w->y + 45;
     
     for (int i = 0; i < history_count; i++) {

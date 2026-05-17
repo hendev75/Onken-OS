@@ -297,75 +297,96 @@ void shell_loop(void) {
         }
 
         if (mouse_b_left && mouse_b_left != last_mbl) {
+            // Check context menu clicks first if visible
             if (menu_visible) {
+                if (mouse_x >= menu_x && mouse_x <= menu_x + 150 &&
+                    mouse_y >= menu_y && mouse_y <= menu_y + 80) {
+                    int click_offset_y = mouse_y - menu_y;
+                    if (click_offset_y >= 5 && click_offset_y <= 28) {
+                        // Refresh
+                        full_redraw = 1;
+                    } else if (click_offset_y >= 29 && click_offset_y <= 52) {
+                        // Wallpaper toggle
+                        extern int wallpaper_mode;
+                        wallpaper_mode = (wallpaper_mode == 1) ? 0 : 1;
+                        fb_render_wallpaper();
+                        full_redraw = 1;
+                    } else if (click_offset_y >= 53 && click_offset_y <= 75) {
+                        // Settings
+                        app_entry_t* app = app_find("settings");
+                        if (app) app->launch(0);
+                    }
+                }
                 menu_visible = 0;
                 full_redraw = 1;
             }
             
-            // Check Start Menu trigger button
-            if (mouse_x >= 10 && mouse_x <= 110 &&
-                mouse_y >= (int32_t)fb_height - 38 && mouse_y <= (int32_t)fb_height - 8) {
-                start_menu_visible = !start_menu_visible;
-                full_redraw = 1;
-            } else {
-                if (start_menu_visible && mouse_x >= 10 && mouse_x <= 210 && mouse_y >= (int32_t)fb_height - 350 && mouse_y <= (int32_t)fb_height - 50) {
-                    if (mouse_y >= (int32_t)fb_height - 290 && mouse_y <= (int32_t)fb_height - 270) { 
-                        app_entry_t* app = app_find("browser");
+            // Check double-click launcher
+            int double_clicked = 0;
+            for(int i = 0; i < 3; i++) {
+                if (mouse_x >= icons[i].x && mouse_x <= icons[i].x + icons[i].w &&
+                    mouse_y >= icons[i].y && mouse_y <= icons[i].y + icons[i].h) {
+                    extern volatile uint64_t kernel_ticks;
+                    if (kernel_ticks - last_click_time < 35 && i == last_click_x) { 
+                        app_entry_t* app = app_find(icons[i].app_name);
                         if (app) app->launch(0);
-                    } else if (mouse_y >= (int32_t)fb_height - 250 && mouse_y <= (int32_t)fb_height - 230) {
-                        app_entry_t* app = app_find("sysinfo");
-                        if (app) app->launch(0);
-                    } else if (mouse_y >= (int32_t)fb_height - 210 && mouse_y <= (int32_t)fb_height - 190) { 
-                        app_entry_t* app = app_find("files");
-                        if (app) app->launch(0);
-                    } else if (mouse_y >= (int32_t)fb_height - 170 && mouse_y <= (int32_t)fb_height - 150) { 
-                        app_entry_t* app = app_find("settings");
-                        if (app) app->launch(0);
-                    } else if (mouse_y >= (int32_t)fb_height - 90 && mouse_y <= (int32_t)fb_height - 70) {
-                        outw(0x604, 0x2000); // QEMU ACPI shutdown
-                        outw(0xB004, 0x2000); // Bochs shutdown fallback
+                        start_menu_visible = 0;
+                        full_redraw = 1;
+                        double_clicked = 1;
                     }
-                    start_menu_visible = 0;
+                    last_click_time = kernel_ticks;
+                    last_click_x = i;
+                }
+            }
+            
+            if (!double_clicked) {
+                // Check Start Menu trigger button
+                if (mouse_x >= 10 && mouse_x <= 110 &&
+                    mouse_y >= (int32_t)fb_height - 38 && mouse_y <= (int32_t)fb_height - 8) {
+                    start_menu_visible = !start_menu_visible;
                     full_redraw = 1;
-                }
-                
-                // Appearance Settings dynamic click handler
-                window_t* active_w = wm_get_active();
-                if (active_w && !active_w->closed && strcmp(active_w->title, "Settings") == 0) {
-                    if (mouse_x >= (int)active_w->x + 20 && mouse_x <= (int)active_w->x + 220) {
-                        if (mouse_y >= (int)active_w->y + 70 && mouse_y <= (int)active_w->y + 100) {
-                            ui_theme = 1; fb_render_wallpaper(); full_redraw = 1;
-                        } else if (mouse_y >= (int)active_w->y + 110 && mouse_y <= (int)active_w->y + 140) {
-                            ui_theme = 0; fb_render_wallpaper(); full_redraw = 1;
-                        } else if (mouse_y >= (int)active_w->y + 190 && mouse_y <= (int)active_w->y + 220) {
-                            wallpaper_mode = 1; fb_render_wallpaper(); full_redraw = 1;
-                        } else if (mouse_y >= (int)active_w->y + 230 && mouse_y <= (int)active_w->y + 260) {
-                            wallpaper_mode = 0; fb_render_wallpaper(); full_redraw = 1;
+                } else {
+                    if (start_menu_visible && mouse_x >= 10 && mouse_x <= 210 && mouse_y >= (int32_t)fb_height - 350 && mouse_y <= (int32_t)fb_height - 50) {
+                        if (mouse_y >= (int32_t)fb_height - 290 && mouse_y <= (int32_t)fb_height - 270) { 
+                            app_entry_t* app = app_find("browser");
+                            if (app) app->launch(0);
+                        } else if (mouse_y >= (int32_t)fb_height - 250 && mouse_y <= (int32_t)fb_height - 230) {
+                            app_entry_t* app = app_find("sysinfo");
+                            if (app) app->launch(0);
+                        } else if (mouse_y >= (int32_t)fb_height - 210 && mouse_y <= (int32_t)fb_height - 190) { 
+                            app_entry_t* app = app_find("files");
+                            if (app) app->launch(0);
+                        } else if (mouse_y >= (int32_t)fb_height - 170 && mouse_y <= (int32_t)fb_height - 150) { 
+                            app_entry_t* app = app_find("settings");
+                            if (app) app->launch(0);
+                        } else if (mouse_y >= (int32_t)fb_height - 90 && mouse_y <= (int32_t)fb_height - 70) {
+                            outw(0x604, 0x2000); // QEMU ACPI shutdown
+                            outw(0xB004, 0x2000); // Bochs shutdown fallback
                         }
+                        start_menu_visible = 0;
+                        full_redraw = 1;
                     }
-                }
-
-                // Desktop double-click launcher
-                if (dragging_icon_idx == -1) {
-                    for(int i = 0; i < 3; i++) {
-                        if (mouse_x >= icons[i].x && mouse_x <= icons[i].x + icons[i].w &&
-                            mouse_y >= icons[i].y && mouse_y <= icons[i].y + icons[i].h) {
-                            extern volatile uint64_t kernel_ticks;
-                            if (kernel_ticks - last_click_time < 30 && i == last_click_x) { 
-                                app_entry_t* app = app_find(icons[i].app_name);
-                                if (app) app->launch(0);
-                                start_menu_visible = 0;
-                                full_redraw = 1;
+                    
+                    // Appearance Settings dynamic click handler
+                    window_t* active_w = wm_get_active();
+                    if (active_w && !active_w->closed && strcmp(active_w->title, "Settings") == 0) {
+                        if (mouse_x >= (int)active_w->x + 20 && mouse_x <= (int)active_w->x + 220) {
+                            if (mouse_y >= (int)active_w->y + 70 && mouse_y <= (int)active_w->y + 100) {
+                                ui_theme = 1; fb_render_wallpaper(); full_redraw = 1;
+                            } else if (mouse_y >= (int)active_w->y + 110 && mouse_y <= (int)active_w->y + 140) {
+                                ui_theme = 0; fb_render_wallpaper(); full_redraw = 1;
+                            } else if (mouse_y >= (int)active_w->y + 190 && mouse_y <= (int)active_w->y + 220) {
+                                wallpaper_mode = 1; fb_render_wallpaper(); full_redraw = 1;
+                            } else if (mouse_y >= (int)active_w->y + 230 && mouse_y <= (int)active_w->y + 260) {
+                                wallpaper_mode = 0; fb_render_wallpaper(); full_redraw = 1;
                             }
-                            last_click_time = kernel_ticks;
-                            last_click_x = i;
                         }
                     }
-                }
-                
-                if (start_menu_visible && mouse_x > 210) {
-                    start_menu_visible = 0;
-                    full_redraw = 1;
+                    
+                    if (start_menu_visible && mouse_x > 210) {
+                        start_menu_visible = 0;
+                        full_redraw = 1;
+                    }
                 }
             }
         }
@@ -391,6 +412,7 @@ void shell_loop(void) {
 
         // Desktop Compositing Render pass
         if (full_redraw) {
+            fb_reset_cursor_backup();
             fb_clear_to_wallpaper();
             
             // Draw desktop icons

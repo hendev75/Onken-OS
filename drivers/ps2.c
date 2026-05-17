@@ -120,6 +120,19 @@ static void handle_mouse(uint8_t data) {
     }
 }
 
+static const char kbd_us_shifted[128] = {
+    0,  27, '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '\b',
+  '\t', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', '\n',
+    0, 'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '"', '~',
+    0, '|', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?',   0,
+  '*',  0,  ' ',   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,
+    0,   0,   0,   0,   0,   0, '-',   0,   0,   0, '+',   0,   0,
+    0,   0,   0,   0,   0,   0,   0,   0,   0
+};
+
+static int shift_pressed = 0;
+static int capslock_active = 0;
+
 static void handle_kbd(uint8_t data) {
     if (data == 0x38) {
         alt_pressed = 1;
@@ -129,8 +142,20 @@ static void handle_kbd(uint8_t data) {
         ctrl_pressed = 1;
     } else if (data == 0x9D) {
         ctrl_pressed = 0;
+    } else if (data == 0x2A || data == 0x36) {
+        shift_pressed = 1;
+    } else if (data == 0xAA || data == 0xB6) {
+        shift_pressed = 0;
+    } else if (data == 0x3A) {
+        capslock_active = !capslock_active;
     } else if (data < 128) {
-        last_key = kbd_us[data];
+        char k = kbd_us[data];
+        int shift_letters = shift_pressed ^ capslock_active;
+        if (k >= 'a' && k <= 'z') {
+            last_key = shift_letters ? kbd_us_shifted[data] : kbd_us[data];
+        } else {
+            last_key = shift_pressed ? kbd_us_shifted[data] : kbd_us[data];
+        }
     }
 }
 

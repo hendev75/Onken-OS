@@ -19,6 +19,7 @@ void fb_plot(uint32_t x, uint32_t y, uint32_t color);
 void fb_rect(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t color);
 void fb_putc(char c, uint32_t x, uint32_t y, uint32_t fg, uint32_t bg);
 void fb_print(const char* str, uint32_t x, uint32_t y, uint32_t fg, uint32_t bg);
+void fb_reset_cursor_backup();
 void fb_hide_cursor();
 void fb_show_cursor(int32_t x, int32_t y);
 uint32_t fb_get_pixel(uint32_t x, uint32_t y);
